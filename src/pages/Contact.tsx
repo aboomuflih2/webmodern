@@ -131,8 +131,8 @@ const Contact = () => {
     {
       icon: Phone,
       title: phoneContent?.title || "Call Us",
-      details: phoneContent ? parseContactDetails(phoneContent.content) : ["0494-2699645 (Landline)", "96454 99921/22/28/29"],
-      primary: phoneContent?.additional_data?.primary || "0494-2699645"
+      details: phoneContent ? parseContactDetails(phoneContent.content) : ["9645499929, 9745499928"],
+      primary: phoneContent?.additional_data?.primary || "9645499929, 9745499928"
     },
     {
       icon: Mail,
@@ -159,14 +159,14 @@ const Contact = () => {
       icon: GraduationCap,
       title: "Admissions Office",
       description: "For admission inquiries and application support",
-      contact: "96454 99921",
+      contact: "9645499929",
       email: "admissions@modernpotur.edu"
     },
     {
       icon: Users,
       title: "Principal's Office",
       description: "For academic and administrative matters",
-      contact: "0494-2699645",
+      contact: "9645499929, 9745499928",
       email: "principal@modernpotur.edu"
     }
   ];
@@ -429,7 +429,7 @@ const Contact = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a 
-                href="tel:0494-2699645" 
+                href="tel:9645499929" 
                 className="inline-flex items-center justify-center px-6 py-3 bg-white text-primary font-semibold rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <Phone className="h-5 w-5 mr-2" />

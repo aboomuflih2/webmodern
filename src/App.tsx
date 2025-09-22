@@ -12,6 +12,7 @@ import Academics from "./pages/Academics";
 import NewsEvents from "./pages/NewsEvents";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+
 import AdminRoute from "./components/AdminRoute";
 import AdminLayout from "./components/AdminLayout";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -21,6 +22,7 @@ import ContactsManager from "./pages/admin/Contacts";
 import ContactPageManager from "./pages/admin/ContactPageManager";
 import AboutPageManager from "./pages/admin/AboutPage";
 import LeadershipManager from "./pages/admin/Leadership";
+import LeadershipMessagesManager from "./pages/admin/LeadershipMessages";
 import SchoolFeaturesManager from "./pages/admin/SchoolFeatures";
 import SchoolStats from "./pages/admin/SchoolStats";
 import TestimonialsManager from "./pages/admin/Testimonials";
@@ -39,7 +41,8 @@ import ApplicationDetail from "./pages/admin/ApplicationDetail";
 import { KGStdApplicationForm } from "./components/admissions/KGStdApplicationForm";
 import { PlusOneApplicationForm } from "./components/admissions/PlusOneApplicationForm";
 import { ApplicationSuccess } from "./pages/ApplicationSuccess";
-import { ApplicationTracking } from "./pages/ApplicationTracking";
+import ApplicationTracking from "./pages/ApplicationTracking";
+import InMemoryAdmin from "./components/admin/InMemoryAdmin";
 
 const queryClient = new QueryClient();
 
@@ -77,7 +80,9 @@ const App = () => (
                   <Route path="contacts" element={<ContactsManager />} />
                   <Route path="contact-page" element={<ContactPageManager />} />
                   <Route path="about" element={<AboutPageManager />} />
-                  <Route path="leadership" element={<LeadershipManager />} />
+                  <Route path="leadership-messages" element={<LeadershipMessagesManager />} />
+                  <Route path="director-board" element={<LeadershipManager />} />
+                  <Route path="in-memory" element={<InMemoryAdmin />} />
                   <Route path="school-features" element={<SchoolFeaturesManager />} />
                   <Route path="school-stats" element={<SchoolStats />} />
                   <Route path="testimonials" element={<TestimonialsManager />} />

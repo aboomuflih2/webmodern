@@ -218,24 +218,33 @@ export type Database = {
       }
       breaking_news: {
         Row: {
+          content: string
           created_at: string
+          expires_at: string | null
           id: string
           is_active: boolean
-          message: string
+          priority: number
+          title: string
           updated_at: string
         }
         Insert: {
+          content: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           is_active?: boolean
-          message: string
+          priority?: number
+          title: string
           updated_at?: string
         }
         Update: {
+          content?: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           is_active?: boolean
-          message?: string
+          priority?: number
+          title?: string
           updated_at?: string
         }
         Relationships: []

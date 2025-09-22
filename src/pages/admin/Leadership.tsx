@@ -32,20 +32,17 @@ const Leadership = () => {
     setViewingMember(null);
   };
 
-  if (showForm) {
-    return (
-      <MemberForm 
-        member={editingMember}
-        onClose={handleCloseForm}
-      />
-    );
-  }
+  const handleFormSuccess = () => {
+    setShowForm(false);
+    setEditingMember(null);
+    // The LeadershipManager component will automatically refresh the data
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Board Members Management</h1>
-        <p className="text-muted-foreground">Manage school board members and leadership team</p>
+        <h1 className="text-3xl font-bold">Director Board Management</h1>
+        <p className="text-muted-foreground">Manage director board members and their profiles</p>
       </div>
 
       <LeadershipManager 
@@ -61,6 +58,13 @@ const Leadership = () => {
           onClose={handleCloseModal}
         />
       )}
+
+      <MemberForm 
+        member={editingMember}
+        isOpen={showForm}
+        onClose={handleCloseForm}
+        onSuccess={handleFormSuccess}
+      />
     </div>
   );
 };

@@ -13,7 +13,6 @@ interface BreakingNews {
   id: string;
   title: string;
   content: string;
-  message?: string; // For backward compatibility
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -35,24 +34,18 @@ const BreakingNewsManager = () => {
     try {
       const { data, error } = await supabase
         .from('breaking_news')
-        .select('id, title, content, message, is_active, created_at, updated_at')
+        .select('id, title, content, is_active, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Map the data to include message for backward compatibility
-      const mappedData = data?.map(item => ({
-        ...item,
-        message: item.content || item.title
-      })) || [];
-      
-      setBreakingNews(mappedData);
+      setBreakingNews(data || []);
       
       // Find the currently active news
-      const active = mappedData?.find(item => item.is_active);
+      const active = data?.find(item => item.is_active);
       if (active) {
         setCurrentActive(active);
-        setMessage(active.message || active.content || active.title);
+        setMessage(active.content || active.title);
         setIsActive(active.is_active);
       }
     } catch (error) {
@@ -82,14 +75,13 @@ const BreakingNewsManager = () => {
           .eq('id', currentActive.id);
       }
 
-      if (currentActive && currentActive.message === message) {
+      if (currentActive && currentActive.content === message) {
         // Just update the active status of current item
         const { error } = await supabase
           .from('breaking_news')
           .update({ 
             title: message.trim(),
             content: message.trim(),
-            message: message.trim(),
             is_active: isActive 
           })
           .eq('id', currentActive.id);
@@ -102,7 +94,6 @@ const BreakingNewsManager = () => {
           .insert([{
             title: message.trim(),
             content: message.trim(),
-            message: message.trim(),
             is_active: isActive
           }]);
 
@@ -192,7 +183,7 @@ const BreakingNewsManager = () => {
           <CardContent>
             <div className="space-y-2">
               <p className="text-sm bg-muted p-3 rounded-lg">
-                {currentActive.message}
+                {currentActive.content}
               </p>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
@@ -266,7 +257,7 @@ const BreakingNewsManager = () => {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="text-sm text-muted-foreground">{news.message}</p>
+                      <p className="text-sm text-muted-foreground">{news.content}</p>
                       <div className="flex items-center gap-4 mt-2">
                         <span className="text-xs text-muted-foreground">
                           Created: {new Date(news.created_at).toLocaleDateString()}

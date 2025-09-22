@@ -32,7 +32,7 @@ export const useJobApplications = () => {
     }
   };
 
-  const submitApplication = async (formData: JobApplicationFormData): Promise<boolean> => {
+  const submitApplication = async (formData: JobApplicationFormData, onProgress?: (progress: number) => void): Promise<boolean> => {
     try {
       let cvFilePath: string | undefined;
 
@@ -52,7 +52,7 @@ export const useJobApplications = () => {
         cvFilePath = fileName;
       }
 
-      // Prepare application data
+      // Prepare application data (only include fields that exist in the database table)
       const applicationData = {
         full_name: formData.full_name,
         email: formData.email,

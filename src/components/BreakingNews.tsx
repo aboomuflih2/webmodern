@@ -3,7 +3,7 @@ import { Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface BreakingNewsData {
-  message: string;
+  content: string;
   is_active: boolean;
 }
 
@@ -20,7 +20,7 @@ const BreakingNews = () => {
     try {
       const { data, error } = await supabase
         .from("breaking_news")
-        .select("message, is_active")
+        .select("content, is_active")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -31,8 +31,8 @@ const BreakingNews = () => {
         return;
       }
 
-      if (data && data.length > 0 && data[0].message) {
-        setNewsText(data[0].message);
+      if (data && data.length > 0 && data[0].content) {
+        setNewsText(data[0].content);
       }
     } catch (error) {
       console.error("Error loading breaking news:", error);

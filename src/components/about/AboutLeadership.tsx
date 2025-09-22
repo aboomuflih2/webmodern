@@ -19,18 +19,46 @@ const AboutLeadership = () => {
 
   useEffect(() => {
     loadLeadership();
+    
+    // Set up real-time subscription for leadership_messages changes
+    const subscription = supabase
+      .channel('leadership_messages_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leadership_messages'
+        },
+        (payload) => {
+          console.log('Leadership messages changed:', payload);
+          // Reload data when changes occur
+          loadLeadership();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const loadLeadership = async () => {
     try {
+      console.log('Loading leadership messages...');
       const { data, error } = await supabase
         .from('leadership_messages')
         .select('*')
         .eq('is_active', true)
         .order('display_order');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error loading leadership:', error);
+        throw error;
+      }
 
+      console.log('Leadership messages loaded:', data?.length || 0, 'messages');
       if (data) {
         setLeaders(data);
       }

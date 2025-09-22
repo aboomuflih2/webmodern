@@ -24,72 +24,88 @@ graph TD
 ```
 
 ## 2. Technology Description
-- Frontend: React@18 + TypeScript + Tailwind CSS + Vite
-- Backend: Supabase (Authentication, Database, Storage)
-- UI Components: Existing component library + custom modal components
-- Rich Text Editor: React-based editor for member bio content
-- File Upload: Supabase Storage for member photos
+
+* Frontend: React\@18 + TypeScript + Tailwind CSS + Vite
+
+* Backend: Supabase (Authentication, Database, Storage)
+
+* UI Components: Existing component library + custom modal components
+
+* Rich Text Editor: React-based editor for member bio content
+
+* File Upload: Supabase Storage for member photos
 
 ## 3. Route definitions
-| Route | Purpose |
-|-------|----------|
-| /about | About Us page with enhanced leadership section displaying board members |
-| /admin/about/leadership | Admin interface for managing board members with CRUD operations |
-| /admin/about/leadership/add | Form for adding new board members |
-| /admin/about/leadership/edit/:id | Form for editing existing board members |
+
+| Route                            | Purpose                                                                 |
+| -------------------------------- | ----------------------------------------------------------------------- |
+| /about                           | About Us page with enhanced leadership section displaying board members |
+| /admin/about/leadership          | Admin interface for managing board members with CRUD operations         |
+| /admin/about/leadership/add      | Form for adding new board members                                       |
+| /admin/about/leadership/edit/:id | Form for editing existing board members                                 |
 
 ## 4. API definitions
+
 ### 4.1 Core API
 
 Board Members Management
+
 ```
 GET /api/board-members
 ```
+
 Response:
-| Param Name | Param Type | Description |
-|------------|------------|-------------|
-| id | string | Unique member identifier |
-| name | string | Member full name |
-| designation | string | Member position/title |
-| board_type | string | 'governing_board' or 'board_of_directors' |
-| photo_url | string | URL to member photo |
-| bio | string | Member biography (rich text) |
-| address | string | Member address |
-| email | string | Member email |
-| mobile | string | Member mobile number |
-| social_links | array | Array of social media links |
-| is_active | boolean | Member visibility status |
-| display_order | number | Sort order for display |
+
+| Param Name     | Param Type | Description                                  |
+| -------------- | ---------- | -------------------------------------------- |
+| id             | string     | Unique member identifier                     |
+| name           | string     | Member full name                             |
+| designation    | string     | Member position/title                        |
+| board\_type    | string     | 'governing\_board' or 'board\_of\_directors' |
+| photo\_url     | string     | URL to member photo                          |
+| bio            | string     | Member biography (rich text)                 |
+| address        | string     | Member address                               |
+| email          | string     | Member email                                 |
+| mobile         | string     | Member mobile number                         |
+| social\_links  | array      | Array of social media links                  |
+| is\_active     | boolean    | Member visibility status                     |
+| display\_order | number     | Sort order for display                       |
 
 ```
 POST /api/board-members
 ```
+
 Request:
-| Param Name | Param Type | isRequired | Description |
-|------------|------------|------------|-------------|
-| name | string | true | Member full name |
-| designation | string | true | Member position/title |
-| board_type | string | true | 'governing_board' or 'board_of_directors' |
-| photo | file | false | Member photo upload |
-| bio | string | false | Member biography |
-| address | string | false | Member address |
-| email | string | false | Member email |
-| mobile | string | false | Member mobile number |
-| social_links | array | false | Social media links |
+
+| Param Name    | Param Type | isRequired | Description                                  |
+| ------------- | ---------- | ---------- | -------------------------------------------- |
+| name          | string     | true       | Member full name                             |
+| designation   | string     | true       | Member position/title                        |
+| board\_type   | string     | true       | 'governing\_board' or 'board\_of\_directors' |
+| photo         | file       | false      | Member photo upload                          |
+| bio           | string     | false      | Member biography                             |
+| address       | string     | false      | Member address                               |
+| email         | string     | false      | Member email                                 |
+| mobile        | string     | false      | Member mobile number                         |
+| social\_links | array      | false      | Social media links                           |
 
 Social Media Links
+
 ```
 POST /api/board-members/:id/social-links
 ```
+
 Request:
-| Param Name | Param Type | isRequired | Description |
-|------------|------------|------------|-------------|
-| platform | string | true | Social media platform (linkedin, twitter, facebook) |
-| url | string | true | Profile URL |
+
+| Param Name | Param Type | isRequired | Description                                         |
+| ---------- | ---------- | ---------- | --------------------------------------------------- |
+| platform   | string     | true       | Social media platform (linkedin, twitter, facebook) |
+| url        | string     | true       | Profile URL                                         |
 
 ## 5. Data model
 
 ### 5.1 Data model definition
+
 ```mermaid
 erDiagram
   BOARD_MEMBERS ||--o{ SOCIAL_LINKS : has
@@ -122,7 +138,8 @@ erDiagram
 
 ### 5.2 Data Definition Language
 
-Board Members Table (board_members)
+Board Members Table (board\_members)
+
 ```sql
 -- Create board_members table
 CREATE TABLE board_members (
@@ -188,3 +205,4 @@ INSERT INTO board_members (name, designation, board_type, bio, email, is_active,
 ('Ms. Sarah Johnson', 'Vice Chairman', 'governing_board', 'Former principal with expertise in curriculum development.', 'vice.chairman@school.edu', true, 2),
 ('Mr. Michael Brown', 'Director of Operations', 'board_of_directors', 'Business leader with focus on educational excellence.', 'operations@school.edu', true, 1);
 ```
+

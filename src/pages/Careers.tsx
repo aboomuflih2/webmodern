@@ -25,7 +25,7 @@ const jobApplicationSchema = z.object({
   designation: z.string().min(1, 'Designation is required'),
   subject: z.string().optional(),
   other_designation: z.string().optional(),
-  qualification: z.string().min(1, 'Qualification is required'),
+  qualifications: z.string().min(1, 'Qualification is required'),
   experience_years: z.number().min(0, 'Experience years must be 0 or greater'),
   previous_experience: z.string().optional(),
   why_join: z.string().min(50, 'Please provide at least 50 characters explaining why you want to join'),
@@ -63,7 +63,7 @@ const Careers: React.FC = () => {
       designation: '',
       subject: '',
       other_designation: '',
-      qualification: '',
+      qualifications: '',
       experience_years: 0,
       previous_experience: '',
       why_join: '',
@@ -331,7 +331,7 @@ const Careers: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="qualification"
+                      name="qualifications"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Highest Qualification *</FormLabel>

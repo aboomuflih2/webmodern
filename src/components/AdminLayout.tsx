@@ -14,6 +14,7 @@ import {
   Star,
   Mail,
   ChevronDown,
+  Heart,
   LogOut,
   Newspaper,
   Calendar,
@@ -23,7 +24,12 @@ import {
   Share2,
   ClipboardList,
   BarChart3,
-  Phone
+  Phone,
+  ExternalLink,
+  UserPlus,
+  Briefcase,
+  Clock,
+  ChevronRight
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -58,7 +64,9 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
   const contentModuleItems = [
     { href: '/admin/breaking-news', label: 'Breaking News', icon: Radio },
-    { href: '/admin/leadership', label: 'Leadership', icon: Users },
+    { href: '/admin/leadership-messages', label: 'Leadership Messages', icon: MessageSquare },
+    { href: '/admin/director-board', label: 'Director Board', icon: Users },
+    { href: '/admin/in-memory', label: 'In Memory', icon: Heart },
     { href: '/admin/school-features', label: 'School Features', icon: Star },
     { href: '/admin/school-stats', label: 'School Stats', icon: BarChart3 },
     { href: '/admin/testimonials', label: 'Testimonials', icon: Trophy },

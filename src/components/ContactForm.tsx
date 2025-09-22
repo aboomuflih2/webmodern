@@ -74,8 +74,8 @@ const ContactForm = () => {
     {
       icon: Phone,
       title: "Call Us",
-      details: ["0494-2699645 (Landline)", "96454 99921/22/28/29"],
-      primary: "0494-2699645"
+      details: ["9645499929, 9745499928"],
+        primary: "9645499929, 9745499928",
     },
     {
       icon: Mail,

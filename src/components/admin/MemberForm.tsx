@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BoardMember, CreateBoardMemberRequest, UpdateBoardMemberRequest, SOCIAL_PLATFORM_LABELS } from '../../../shared/types/board-members';
 import { useBoardMemberAdmin } from '../../hooks/useBoardMembers';
 import { Save, X, Plus, Trash2, Upload, User, AlertCircle } from 'lucide-react';
+import PhotoUpload from '../PhotoUpload';
 
 interface SocialLinkForm {
   id?: string;
@@ -22,7 +23,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, isOpen, onClose, onSucc
   const [formData, setFormData] = useState({
     name: '',
     designation: '',
-    board_type: 'governing_body',
+    board_type: 'governing_board',
     bio: '',
     email: '',
     mobile: '',
@@ -30,6 +31,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, isOpen, onClose, onSucc
     photo_url: '',
     display_order: 0
   });
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState('');
   const [socialLinks, setSocialLinks] = useState<SocialLinkForm[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string>('');
@@ -40,7 +42,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, isOpen, onClose, onSucc
       setFormData({
         name: member.name || '',
         designation: member.designation || '',
-        board_type: member.board_type || 'governing_body',
+        board_type: member.board_type || 'governing_board',
         bio: member.bio || '',
         email: member.email || '',
         mobile: member.mobile || '',
@@ -48,6 +50,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, isOpen, onClose, onSucc
         photo_url: member.photo_url || '',
         display_order: member.display_order || 0
       });
+      setCurrentPhotoUrl(member.photo_url || '');
       setSocialLinks(
         member.social_links?.map(link => ({
           id: link.id,
@@ -61,7 +64,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, isOpen, onClose, onSucc
       setFormData({
         name: '',
         designation: '',
-        board_type: 'governing_body',
+        board_type: 'governing_board',
         bio: '',
         email: '',
         mobile: '',
@@ -69,6 +72,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, isOpen, onClose, onSucc
         photo_url: '',
         display_order: 0
       });
+      setCurrentPhotoUrl('');
       setSocialLinks([]);
     }
     setErrors({});
@@ -155,6 +159,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, isOpen, onClose, onSucc
         // Update existing member
         const updateData: UpdateBoardMemberRequest = {
           ...formData,
+          photo_url: currentPhotoUrl,
           social_links: validSocialLinks.map(link => ({
             id: link.id,
             platform: link.platform,
@@ -167,6 +172,7 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, isOpen, onClose, onSucc
         // Create new member
         const createData: CreateBoardMemberRequest = {
           ...formData,
+          photo_url: currentPhotoUrl,
           social_links: validSocialLinks.map(link => ({
             platform: link.platform,
             url: link.url,
@@ -267,9 +273,8 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, isOpen, onClose, onSucc
                   onChange={(e) => handleInputChange('board_type', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="governing_body">Governing Body</option>
-                  <option value="management_committee">Management Committee</option>
-                  <option value="advisory_board">Advisory Board</option>
+                  <option value="governing_board">Governing Board</option>
+                  <option value="board_of_directors">Board of Directors</option>
                 </select>
               </div>
 
@@ -288,39 +293,19 @@ const MemberForm: React.FC<MemberFormProps> = ({ member, isOpen, onClose, onSucc
               </div>
             </div>
 
-            {/* Photo URL */}
+            {/* Photo Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Photo URL
+                Member Photo
               </label>
-              <div className="flex gap-3">
-                <input
-                  type="url"
-                  value={formData.photo_url}
-                  onChange={(e) => handleInputChange('photo_url', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://example.com/photo.jpg"
-                />
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  Upload
-                </button>
-              </div>
-              {formData.photo_url && (
-                <div className="mt-3">
-                  <img 
-                    src={formData.photo_url} 
-                    alt="Preview" 
-                    className="w-20 h-20 object-cover rounded-lg border border-gray-200"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                </div>
-              )}
+              <PhotoUpload
+                currentPhotoUrl={currentPhotoUrl}
+                onPhotoChange={setCurrentPhotoUrl}
+                bucket="staff-photos"
+                folder="board-members"
+                maxSizeInMB={5}
+                className="w-full"
+              />
             </div>
 
             {/* Bio */}

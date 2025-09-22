@@ -170,8 +170,7 @@ export default function ApplicationDetail() {
   };
 
   const fetchInterviewSubjects = async () => {
-    console.log('🔍 fetchInterviewSubjects called with application:', application);
-    console.log('🔍 URL type parameter:', type);
+    
     if (!application || !type) {
       console.log('❌ No application or type found');
       return;

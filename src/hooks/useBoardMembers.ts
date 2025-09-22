@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { BoardMember, BoardType, CreateBoardMemberRequest, UpdateBoardMemberRequest } from '../../shared/types/board-members';
 
@@ -7,7 +7,7 @@ export const useBoardMembers = (boardType?: BoardType) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -37,11 +37,11 @@ export const useBoardMembers = (boardType?: BoardType) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [boardType]);
 
   useEffect(() => {
     fetchMembers();
-  }, [boardType]);
+  }, [fetchMembers]);
 
   return {
     members,
@@ -55,7 +55,7 @@ export const useBoardMemberAdmin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createMember = async (memberData: CreateBoardMemberRequest): Promise<BoardMember | null> => {
+  const createMember = useCallback(async (memberData: CreateBoardMemberRequest): Promise<BoardMember | null> => {
     try {
       setLoading(true);
       setError(null);
@@ -70,7 +70,7 @@ export const useBoardMemberAdmin = () => {
           address: memberData.address,
           email: memberData.email,
           mobile: memberData.mobile,
-          photo_url: null // Will be updated after photo upload
+          photo_url: memberData.photo_url
         })
         .select()
         .single();
@@ -100,9 +100,9 @@ export const useBoardMemberAdmin = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const updateMember = async (memberData: UpdateBoardMemberRequest): Promise<BoardMember | null> => {
+  const updateMember = useCallback(async (memberData: UpdateBoardMemberRequest): Promise<BoardMember | null> => {
     try {
       setLoading(true);
       setError(null);
@@ -117,6 +117,7 @@ export const useBoardMemberAdmin = () => {
           address: memberData.address,
           email: memberData.email,
           mobile: memberData.mobile,
+          photo_url: memberData.photo_url,
           is_active: memberData.is_active,
           display_order: memberData.display_order
         })
@@ -135,9 +136,9 @@ export const useBoardMemberAdmin = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const deleteMember = async (id: string): Promise<boolean> => {
+  const deleteMember = useCallback(async (id: string): Promise<boolean> => {
     try {
       setLoading(true);
       setError(null);
@@ -158,9 +159,9 @@ export const useBoardMemberAdmin = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const getAllMembers = async (): Promise<BoardMember[]> => {
+  const getAllMembers = useCallback(async (): Promise<BoardMember[]> => {
     try {
       setLoading(true);
       setError(null);
@@ -185,7 +186,7 @@ export const useBoardMemberAdmin = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return {
     loading,

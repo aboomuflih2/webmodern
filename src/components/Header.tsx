@@ -26,7 +26,7 @@ const Header = ({ onAdmissionsClick }: HeaderProps) => {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <Phone className="h-4 w-4" />
-              <span>0494-2699645</span>
+              <span>9645499929, 9745499928</span>
             </div>
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4" />

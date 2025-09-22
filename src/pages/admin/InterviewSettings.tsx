@@ -12,6 +12,7 @@ interface SubjectTemplate {
   subject_name: string;
   max_marks: number;
   display_order: number;
+  form_type?: 'kg_std' | 'plus_one';
 }
 
 const InterviewSettings = () => {
@@ -32,19 +33,20 @@ const InterviewSettings = () => {
         .select("*")
         .eq("is_active", true)
         .order("display_order");
-
+      
       if (error) throw error;
-
-      const kgStd = data?.filter(s => s.form_type === "kg_std") || [];
-      const plusOne = data?.filter(s => s.form_type === "plus_one") || [];
-
+      
+      // Separate subjects by form_type
+      const kgStd = data?.filter(s => s.form_type === 'kg_std') || [];
+      const plusOne = data?.filter(s => s.form_type === 'plus_one') || [];
+      
       setKgStdSubjects(kgStd);
       setPlusOneSubjects(plusOne);
     } catch (error) {
       console.error("Error fetching subjects:", error);
       toast({
         title: "Error",
-        description: "Failed to load interview subjects",
+        description: `Failed to load interview subjects: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -58,6 +60,7 @@ const InterviewSettings = () => {
       subject_name: "",
       max_marks: 25,
       display_order: formType === "kg_std" ? kgStdSubjects.length + 1 : plusOneSubjects.length + 1,
+      form_type: formType,
     };
 
     if (formType === "kg_std") {
@@ -99,31 +102,31 @@ const InterviewSettings = () => {
       const { data: existingTemplates } = await supabase
         .from("interview_subject_templates")
         .select("*")
-        .in("form_type", ["kg_std", "plus_one"]);
+        .eq("is_active", true);
 
-      // Delete existing subjects
+      // Delete all existing subjects
       const { error: deleteError } = await supabase
         .from("interview_subject_templates")
         .delete()
-        .in("form_type", ["kg_std", "plus_one"]);
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
       
       if (deleteError) {
         throw deleteError;
       }
 
-      // Insert new subjects
+      // Insert new subjects with form_type
       const allSubjects = [
-        ...kgStdSubjects.filter(s => s.subject_name.trim()).map(s => ({
-          form_type: "kg_std",
+        ...kgStdSubjects.filter(s => s.subject_name.trim()).map((s, index) => ({
           subject_name: s.subject_name.trim(),
           max_marks: s.max_marks,
-          display_order: s.display_order,
+          display_order: index + 1,
+          form_type: 'kg_std' as const,
         })),
-        ...plusOneSubjects.filter(s => s.subject_name.trim()).map(s => ({
-          form_type: "plus_one",
+        ...plusOneSubjects.filter(s => s.subject_name.trim()).map((s, index) => ({
           subject_name: s.subject_name.trim(),
           max_marks: s.max_marks,
-          display_order: s.display_order,
+          display_order: kgStdSubjects.length + index + 1,
+          form_type: 'plus_one' as const,
         })),
       ];
 
@@ -132,7 +135,9 @@ const InterviewSettings = () => {
           .from("interview_subject_templates")
           .insert(allSubjects);
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          throw insertError;
+        }
       }
 
       // Synchronize interview_subjects table with new templates
@@ -144,8 +149,7 @@ const InterviewSettings = () => {
             max_marks: newSubject.max_marks,
             subject_name: newSubject.subject_name 
           })
-          .eq("subject_name", newSubject.subject_name)
-          .eq("application_type", newSubject.form_type);
+          .eq("subject_name", newSubject.subject_name);
 
         if (updateError) {
           console.warn(`Warning: Could not update existing marks for ${newSubject.subject_name}:`, updateError);
@@ -163,8 +167,7 @@ const InterviewSettings = () => {
           const { error: deleteSubjectError } = await supabase
             .from("interview_subjects")
             .delete()
-            .eq("subject_name", removedSubject.subject_name)
-            .eq("application_type", removedSubject.form_type);
+            .eq("subject_name", removedSubject.subject_name);
 
           if (deleteSubjectError) {
             console.warn(`Warning: Could not remove marks for deleted subject ${removedSubject.subject_name}:`, deleteSubjectError);

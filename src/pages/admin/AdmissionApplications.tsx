@@ -79,7 +79,7 @@ export default function AdmissionApplications() {
       // Fetch KG STD applications
       const { data: kgStdData, error: kgStdError } = await supabase
         .from('kg_std_applications')
-        .select('id, application_number, full_name, mobile_number, status, created_at')
+        .select('id, application_number, child_name, mobile_number, status, created_at')
         .order('created_at', { ascending: false });
 
       if (kgStdError) throw kgStdError;
@@ -96,6 +96,7 @@ export default function AdmissionApplications() {
       const combinedApplications: Application[] = [
         ...(kgStdData || []).map(app => ({
           ...app,
+          full_name: app.child_name, // Map child_name to full_name for consistency
           type: "kg_std" as const,
         })),
         ...(plusOneData || []).map(app => ({

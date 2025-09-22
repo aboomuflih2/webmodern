@@ -99,7 +99,7 @@ export function PlusOneApplicationForm() {
             siblings_names: data.siblingsNames || null,
           }]);
         if (!error) {
-          navigate(`/admissions/success?type=plus-one&app=${encodeURIComponent(applicationNumber)}`);
+          navigate(`/admissions/success?type=plus-one&app=${encodeURIComponent(applicationNumber)}&mobile=${encodeURIComponent(data.mobileNumber)}`);
           return;
         }
         lastError = error;

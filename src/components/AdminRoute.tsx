@@ -15,14 +15,14 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
 
   useEffect(() => {
     const verifyAdmin = async () => {
-      console.log('🔍 AdminRoute verifyAdmin - user:', user);
+  
       
       // Double-check session state
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       console.log('📋 AdminRoute session check:', { session: session?.user?.email, sessionError });
       
       if (user && session) {
-        console.log('🔍 AdminRoute calling checkAdminRole for user:', user.id);
+
         const adminStatus = await checkAdminRole(user.id);
         console.log('👤 AdminRoute admin status:', adminStatus);
         setIsAdmin(adminStatus);

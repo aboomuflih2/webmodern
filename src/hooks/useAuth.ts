@@ -67,7 +67,7 @@ export function useAuth() {
 
   const checkAdminRole = async (userId?: string): Promise<boolean> => {
     const userIdToCheck = userId || authState.user?.id;
-    console.log('🔍 checkAdminRole called with userId:', userIdToCheck);
+
     
     if (!userIdToCheck) {
       console.log('❌ No user ID available for admin check');
@@ -84,7 +84,7 @@ export function useAuth() {
         return false;
       }
       
-      console.log('🔍 Making user_roles query...');
+
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')

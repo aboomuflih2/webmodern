@@ -226,6 +226,7 @@ const NewsEvents = () => {
         author_name: newComment.name,
         author_email: newComment.email,
         comment_text: newComment.text,
+        is_approved: false, // Comments require admin approval
       });
 
     // Fallback for older schema where column was 'comment_content'
@@ -238,15 +239,16 @@ const NewsEvents = () => {
           author_name: newComment.name,
           author_email: newComment.email,
           comment_content: newComment.text,
+          is_approved: false, // Comments require admin approval
         });
       error = retry.error;
     }
 
     if (!error) {
       setNewComment({ name: "", email: "", text: "" });
-      toast({ title: "Comment submitted for approval!" });
-      // Refresh comments list to show newly added once approved (optional immediate refresh)
-      fetchComments(selectedArticle.id);
+      toast({ title: "Comment submitted successfully!", description: "Your comment is pending approval and will be visible once reviewed." });
+      // No need to refresh comments since they won't be visible until approved
+      // fetchComments(selectedArticle.id);
     } else {
       const msg = error instanceof Error ? error.message : "";
       if (msg.toLowerCase().includes("row-level security") || msg.toLowerCase().includes("permission")) {

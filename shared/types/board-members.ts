@@ -29,6 +29,7 @@ export interface CreateBoardMemberRequest {
   designation: string;
   board_type: 'governing_board' | 'board_of_directors';
   photo?: File;
+  photo_url?: string;
   bio?: string;
   address?: string;
   email?: string;
@@ -38,6 +39,7 @@ export interface CreateBoardMemberRequest {
 
 export interface UpdateBoardMemberRequest extends Partial<CreateBoardMemberRequest> {
   id: string;
+  photo_url?: string;
   is_active?: boolean;
   display_order?: number;
 }

@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { Pencil, Trash2, Plus, Eye, MessageCircle, Heart, FileText } from "lucide-react";
 import { format } from "date-fns";
+import { PhotoUpload } from "@/components/PhotoUpload";
 
 interface NewsPost {
   id: string;
@@ -81,7 +82,7 @@ const NewsManager = () => {
       .from("article_comments")
       .select(`
         *,
-        news_posts(title)
+        news_posts!fk_article_comments_news_posts(title)
       `)
       .order("created_at", { ascending: false });
 
@@ -288,7 +289,7 @@ const NewsManager = () => {
                   Add Article
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 <DialogHeader>
                   <DialogTitle>
                     {editingArticle ? "Edit Article" : "Add New Article"}
@@ -318,12 +319,13 @@ const NewsManager = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">Featured Image URL</label>
-                    <Input
-                      value={formData.featured_image}
-                      onChange={(e) => setFormData(prev => ({ ...prev, featured_image: e.target.value }))}
-                      placeholder="https://example.com/image.jpg"
-                      type="url"
+                    <label className="block text-sm font-medium mb-1">Featured Image</label>
+                    <PhotoUpload
+                      currentPhotoUrl={formData.featured_image}
+                      onPhotoChange={(photoUrl) => setFormData(prev => ({ ...prev, featured_image: photoUrl || "" }))}
+                      bucket="news-photos"
+                      folder="articles"
+                      maxSizeInMB={5}
                     />
                   </div>
 

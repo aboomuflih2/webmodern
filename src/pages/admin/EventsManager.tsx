@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Pencil, Trash2, Plus, Calendar, Clock } from "lucide-react";
 import { format, isAfter } from "date-fns";
+import { PhotoUpload } from "@/components/PhotoUpload";
 
 interface Event {
   id: string;
@@ -35,6 +36,7 @@ const EventsManager = () => {
     description: "",
     event_date: "",
     location: "",
+    image_url: "",
     is_featured: false,
     is_published: true,
   });
@@ -136,6 +138,7 @@ const EventsManager = () => {
       description: "",
       event_date: "",
       location: "",
+      image_url: "",
       is_featured: false,
       is_published: true,
     });
@@ -150,6 +153,7 @@ const EventsManager = () => {
         description: event.description,
         event_date: format(new Date(event.event_date), "yyyy-MM-dd'T'HH:mm"),
         location: event.location || "",
+        image_url: event.image_url || "",
         is_featured: event.is_featured,
         is_published: event.is_published,
       });
@@ -179,7 +183,7 @@ const EventsManager = () => {
               Add Event
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <DialogHeader>
               <DialogTitle>
                 {editingEvent ? "Edit Event" : "Add New Event"}
@@ -213,6 +217,17 @@ const EventsManager = () => {
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                   placeholder="Event location"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Event Image</label>
+                <PhotoUpload
+                  currentPhotoUrl={formData.image_url}
+                  onPhotoChange={(photoUrl) => setFormData(prev => ({ ...prev, image_url: photoUrl || "" }))}
+                  bucket="event-photos"
+                  folder="events"
+                  maxSizeInMB={5}
                 />
               </div>
 

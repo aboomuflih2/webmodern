@@ -68,14 +68,17 @@ export function ApplicationTracking() {
 
       setLoading(true);
       try {
+        console.log('Fetching application with:', { applicationNumber, mobileNumber });
         const { data, error } = await supabase.functions.invoke('get-application-status', {
           body: { applicationNumber, mobileNumber },
         });
 
         if (error) {
+          console.error('Supabase function error:', error);
           throw new Error(error.message ?? "Failed to load application");
         }
 
+        console.log('Application data received:', data);
         const payload = (data ?? {}) as {
           application?: ApplicationData;
           applicationType?: string;
@@ -85,13 +88,17 @@ export function ApplicationTracking() {
         };
 
         if (payload.error) {
+          console.error('Payload error:', payload.error);
           throw new Error(payload.error);
         }
 
         if (!payload.application) {
+          console.error('No application found in payload');
           throw new Error("Application not found");
         }
 
+        console.log('Application status:', payload.application.status);
+        console.log('Interview marks:', payload.interviewMarks);
         setApplication(payload.application);
 
         if (payload.applicationType === "kg_std" || payload.applicationType === "plus_one") {
@@ -106,11 +113,11 @@ export function ApplicationTracking() {
           setAcademicYear("");
         }
 
-        setInterviewMarks(
-          Array.isArray(payload.interviewMarks)
-            ? (payload.interviewMarks as InterviewMark[])
-            : []
-        );
+        const marks = Array.isArray(payload.interviewMarks)
+          ? (payload.interviewMarks as InterviewMark[])
+          : [];
+        console.log('Setting interview marks:', marks);
+        setInterviewMarks(marks);
       } catch (error) {
         console.error("Error fetching application:", error);
         const message =
@@ -580,3 +587,5 @@ export function ApplicationTracking() {
     </div>
   );
 }
+
+export default ApplicationTracking;

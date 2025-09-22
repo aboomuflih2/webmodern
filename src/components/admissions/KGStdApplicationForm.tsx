@@ -98,7 +98,7 @@ export function KGStdApplicationForm() {
           .from('kg_std_applications')
           .insert([{
             application_number: applicationNumber,
-            fullname_name: data.fullName,
+            child_name: data.fullName,
             gender: data.gender,
             date_of_birth: data.dateOfBirth,
             father_name: data.fatherName,
@@ -111,7 +111,7 @@ export function KGStdApplicationForm() {
             mobile_number: data.mobileNumber,
           }]);
         if (!error) {
-          navigate(`/admissions/success?type=kg-std&app=${encodeURIComponent(applicationNumber)}`);
+          navigate(`/admissions/success?type=kg-std&app=${encodeURIComponent(applicationNumber)}&mobile=${encodeURIComponent(data.mobileNumber)}`);
           return;
         }
         lastError = error;
@@ -122,7 +122,7 @@ export function KGStdApplicationForm() {
             .from('kg_std_applications')
             .insert([{
               application_number: applicationNumber,
-              fullname_name: data.fullName,
+              child_name: data.fullName,
               gender: data.gender,
               date_of_birth: data.dateOfBirth,
               father_name: data.fatherName,
@@ -138,7 +138,7 @@ export function KGStdApplicationForm() {
               previous_school: data.previousSchool || null,
             }]);
           if (!legacyError) {
-            navigate(`/admissions/success?type=kg-std&app=${encodeURIComponent(applicationNumber)}`);
+            navigate(`/admissions/success?type=kg-std&app=${encodeURIComponent(applicationNumber)}&mobile=${encodeURIComponent(data.mobileNumber)}`);
             return;
           }
           lastError = legacyError;

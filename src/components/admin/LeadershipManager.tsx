@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BoardMember } from '../../../shared/types/board-members';
 import { useBoardMemberAdmin } from '../../hooks/useBoardMembers';
 import { Plus, Edit, Trash2, Eye, Search, Filter, Users, AlertCircle } from 'lucide-react';
@@ -7,15 +7,26 @@ import MemberProfileModal from '../MemberProfileModal';
 interface LeadershipManagerProps {
   onAddMember: () => void;
   onEditMember: (member: BoardMember) => void;
+  onViewMember?: (member: BoardMember) => void;
 }
 
-const LeadershipManager: React.FC<LeadershipManagerProps> = ({ onAddMember, onEditMember }) => {
-  const { members, loading, error, deleteMember } = useBoardMemberAdmin();
+const LeadershipManager: React.FC<LeadershipManagerProps> = ({ onAddMember, onEditMember, onViewMember }) => {
+  const { loading, error, deleteMember, getAllMembers } = useBoardMemberAdmin();
+  const [members, setMembers] = useState<BoardMember[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedMember, setSelectedMember] = useState<BoardMember | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // Fetch members on component mount
+  useEffect(() => {
+    const fetchMembers = async () => {
+      const fetchedMembers = await getAllMembers();
+      setMembers(fetchedMembers);
+    };
+    fetchMembers();
+  }, [getAllMembers]);
 
   // Filter and search members
   const filteredMembers = members.filter(member => {
@@ -26,14 +37,23 @@ const LeadershipManager: React.FC<LeadershipManagerProps> = ({ onAddMember, onEd
   });
 
   const handleViewMember = (member: BoardMember) => {
-    setSelectedMember(member);
-    setIsModalOpen(true);
+    if (onViewMember) {
+      onViewMember(member);
+    } else {
+      setSelectedMember(member);
+      setIsModalOpen(true);
+    }
   };
 
   const handleDeleteMember = async (memberId: string) => {
     if (deleteConfirm === memberId) {
       try {
-        await deleteMember(memberId);
+        const success = await deleteMember(memberId);
+        if (success) {
+          // Refresh the members list
+          const fetchedMembers = await getAllMembers();
+          setMembers(fetchedMembers);
+        }
         setDeleteConfirm(null);
       } catch (error) {
         console.error('Failed to delete member:', error);
@@ -47,18 +67,16 @@ const LeadershipManager: React.FC<LeadershipManagerProps> = ({ onAddMember, onEd
 
   const getBoardTypeLabel = (type: string) => {
     switch (type) {
-      case 'governing_body': return 'Governing Body';
-      case 'management_committee': return 'Management Committee';
-      case 'advisory_board': return 'Advisory Board';
+      case 'governing_board': return 'Governing Board';
+      case 'board_of_directors': return 'Board of Directors';
       default: return type;
     }
   };
 
   const getBoardTypeColor = (type: string) => {
     switch (type) {
-      case 'governing_body': return 'bg-blue-100 text-blue-800';
-      case 'management_committee': return 'bg-green-100 text-green-800';
-      case 'advisory_board': return 'bg-purple-100 text-purple-800';
+      case 'governing_board': return 'bg-blue-100 text-blue-800';
+      case 'board_of_directors': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -120,9 +138,8 @@ const LeadershipManager: React.FC<LeadershipManagerProps> = ({ onAddMember, onEd
             className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
           >
             <option value="all">All Boards</option>
-            <option value="governing_body">Governing Body</option>
-            <option value="management_committee">Management Committee</option>
-            <option value="advisory_board">Advisory Board</option>
+            <option value="governing_board">Governing Board</option>
+            <option value="board_of_directors">Board of Directors</option>
           </select>
         </div>
       </div>

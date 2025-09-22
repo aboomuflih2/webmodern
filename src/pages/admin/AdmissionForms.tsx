@@ -46,6 +46,7 @@ export default function AdmissionForms() {
   };
 
   const updateFormStatus = async (formType: string, isActive: boolean) => {
+    console.debug(`🔄 Updating form status: ${formType} -> ${isActive}`);
     setSaving(true);
     try {
       const { error } = await supabase
@@ -55,11 +56,14 @@ export default function AdmissionForms() {
 
       if (error) throw error;
 
-      setForms(forms.map(form => 
+      const updatedForms = forms.map(form => 
         form.form_type === formType 
           ? { ...form, is_active: isActive }
           : form
-      ));
+      );
+      
+      console.debug(`📊 Updated forms state:`, updatedForms);
+      setForms(updatedForms);
 
       toast({
         title: "Success",
@@ -67,6 +71,7 @@ export default function AdmissionForms() {
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to update form status";
+      console.error(`❌ Form status update error:`, error);
       toast({
         title: "Error",
         description: message,
@@ -119,6 +124,13 @@ export default function AdmissionForms() {
 
   const kgStdForm = forms.find(f => f.form_type === 'kg_std');
   const plusOneForm = forms.find(f => f.form_type === 'plus_one');
+  
+  // Debug logging for Switch state
+  console.debug('🔍 Current forms data:', forms);
+  console.debug('📋 KG STD Form:', kgStdForm);
+  console.debug('📋 Plus One Form:', plusOneForm);
+  console.debug('🎛️ KG STD Switch checked:', kgStdForm?.is_active || false);
+  console.debug('🎛️ Plus One Switch checked:', plusOneForm?.is_active || false);
 
   return (
     <div className="space-y-6">
@@ -153,9 +165,13 @@ export default function AdmissionForms() {
               </div>
               <Switch
                 id="kg-std-toggle"
-                checked={kgStdForm?.is_active || false}
+                key={`kg-std-${kgStdForm?.is_active}`}
+                checked={Boolean(kgStdForm?.is_active)}
                 onCheckedChange={(checked) => updateFormStatus('kg_std', checked)}
                 disabled={saving}
+                style={{
+                  backgroundColor: Boolean(kgStdForm?.is_active) ? 'hsl(var(--primary))' : 'hsl(var(--input))'
+                }}
               />
             </div>
 
@@ -218,9 +234,13 @@ export default function AdmissionForms() {
               </div>
               <Switch
                 id="plus-one-toggle"
-                checked={plusOneForm?.is_active || false}
+                key={`plus-one-${plusOneForm?.is_active}`}
+                checked={Boolean(plusOneForm?.is_active)}
                 onCheckedChange={(checked) => updateFormStatus('plus_one', checked)}
                 disabled={saving}
+                style={{
+                  backgroundColor: Boolean(plusOneForm?.is_active) ? 'hsl(var(--primary))' : 'hsl(var(--input))'
+                }}
               />
             </div>
 
