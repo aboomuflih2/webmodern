@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { createClient } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 import { JobApplication, JobApplicationFormData, JobApplicationFilters, BulkImportResult } from '@/types/job-applications';
 import { v4 as uuidv4 } from 'uuid';
 
-export const useJobApplications = () => {
+export const useJobApplications = (options?: { autoFetch?: boolean }) => {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,8 +22,25 @@ export const useJobApplications = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      setApplications(data || []);
+      const normalized = (data || []).map((row: any) => ({
+        id: row.id,
+        full_name: row.full_name ?? row.name ?? '',
+        email: row.email ?? '',
+        phone: row.phone ?? row.mobile ?? '',
+        designation: row.designation ?? '',
+        subject: row.subject ?? row.subject_specification ?? undefined,
+        other_designation: row.other_designation ?? row.specify_other ?? undefined,
+        experience_years: row.experience_years ?? 0,
+        qualifications: row.qualifications ?? '',
+        district: row.district ?? '',
+        address:
+          row.address ?? [row.place, row.post_office, row.pincode].filter(Boolean).join(', '),
+        cv_file: row.cv_file ?? null,
+        cover_letter: row.cover_letter ?? undefined,
+        created_at: row.created_at,
+        updated_at: row.updated_at ?? undefined,
+      }));
+      setApplications(normalized);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch job applications';
       setError(errorMessage);
@@ -34,50 +52,116 @@ export const useJobApplications = () => {
 
   const submitApplication = async (formData: JobApplicationFormData, onProgress?: (progress: number) => void): Promise<boolean> => {
     try {
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (!anonKey) {
+        console.error('[JobApplications] Missing VITE_SUPABASE_ANON_KEY');
+      } else {
+        console.debug('[JobApplications] Using anon key', {
+          len: anonKey.length,
+          prefix: anonKey.slice(0, 12)
+        });
+      }
+
+      // Create a fresh public client that strips Authorization and only sends apikey
+      const strippedFetch: typeof fetch = (input, init) => {
+        const headers = new Headers(init?.headers || {});
+        if (headers.has('Authorization')) {
+          headers.delete('Authorization');
+        }
+        if (anonKey && !headers.has('apikey')) {
+          headers.set('apikey', anonKey);
+        }
+        const nextInit: RequestInit = { ...(init || {}), headers };
+        return fetch(input as RequestInfo, nextInit);
+      };
+
+      const publicClient = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        anonKey,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+          },
+          global: {
+            headers: {
+              apikey: anonKey || '',
+            },
+            fetch: strippedFetch,
+          },
+        }
+      );
+
       let cvFilePath: string | undefined;
 
       // Upload CV file if provided
       if (formData.cv_file) {
         const fileExt = formData.cv_file.name.split('.').pop();
         const fileName = `${uuidv4()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('cv-uploads')
-          .upload(fileName, formData.cv_file);
+        const { data, error } = await supabase.storage
+          .from('document-uploads')
+          .upload(fileName, formData.cv_file, {
+            cacheControl: '3600',
+            upsert: false,
+          });
 
-        if (uploadError) {
-          throw new Error(`Failed to upload CV: ${uploadError.message}`);
+        if (error) {
+          throw new Error(`Failed to upload CV: ${error.message}`);
         }
-        
-        cvFilePath = fileName;
-      }
 
-      // Prepare application data (only include fields that exist in the database table)
+        // On success, use the returned path
+        cvFilePath = data?.path || fileName;
+        if (onProgress) {
+          try { onProgress(100); } catch {}
+        }
+      } 
+
+      // Prepare application data (using new database columns)
       const applicationData = {
+        application_number: `APP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         full_name: formData.full_name,
         email: formData.email,
         phone: formData.phone,
-        designation: formData.designation,
+        position: formData.designation || 'Not specified', // Keep position for backward compatibility
+        designation: formData.designation || null, // New column
+        experience_years: formData.experience_years || 0,
+        qualification: formData.qualifications || 'Not specified', // Keep qualification for backward compatibility
+        qualifications: formData.qualifications || null, // New column
+        date_of_birth: formData.date_of_birth || null,
+        address: formData.address || null,
+        district: formData.district || null,
         subject: formData.subject || null,
         other_designation: formData.other_designation || null,
-        experience_years: formData.experience_years,
-        qualifications: formData.qualifications,
-        district: formData.district,
-        address: formData.address,
-        cv_file_path: cvFilePath || null,
-        cover_letter: formData.cover_letter || null,
+        previous_experience: formData.previous_experience || null,
+        why_join: formData.why_join || null,
+        cv_file: cvFilePath || null,
+        cover_letter: formData.why_join || null, // Use why_join as cover letter for backward compatibility
+        status: 'pending',
       };
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await publicClient
         .from('job_applications')
         .insert([applicationData]);
 
       if (insertError) {
-        // If application insert fails, clean up uploaded file
+        console.error('[JobApplications] Insert error', {
+          code: (insertError as any).code,
+          message: insertError.message,
+          details: (insertError as any).details,
+          hint: (insertError as any).hint,
+        });
+        // If the main insert failed, log the error and re-throw it
+        // The applicationData should now have the correct field mapping
+        console.error('[JobApplications] Main insert failed, no legacy fallback needed');
+        
         if (cvFilePath) {
-          await supabase.storage
-            .from('cv-uploads')
-            .remove([cvFilePath]);
+          try {
+            await supabase.storage
+              .from('document-uploads')
+              .remove([cvFilePath]);
+          } catch (remErr) {
+            console.warn('[JobApplications] Cleanup remove CV failed', remErr);
+          }
         }
         throw insertError;
       }
@@ -105,7 +189,7 @@ export const useJobApplications = () => {
       // Delete CV file if exists
       if (cvFilePath) {
         await supabase.storage
-          .from('cv-uploads')
+          .from('document-uploads')
           .remove([cvFilePath]);
       }
 
@@ -139,7 +223,7 @@ export const useJobApplications = () => {
   const downloadCV = async (filePath: string, applicantName: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase.storage
-        .from('cv-uploads')
+        .from('document-uploads')
         .download(filePath);
 
       if (error) throw error;
@@ -209,8 +293,13 @@ export const useJobApplications = () => {
   };
 
   useEffect(() => {
-    fetchApplications();
-  }, []);
+    const shouldAutoFetch = options?.autoFetch !== false;
+    if (shouldAutoFetch) {
+      fetchApplications();
+    } else {
+      setLoading(false);
+    }
+  }, [options?.autoFetch]);
 
   return {
     applications,

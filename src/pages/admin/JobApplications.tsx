@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Download, Filter, Users, Calendar, Upload, Phone, Mail, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { designationOptions, subjectOptions, districtOptions } from "@/lib/schemas";
 import { useJobApplications, useJobApplicationFilters } from "@/hooks/useJobApplications";
 import { JobApplication, ColumnMapping, REQUIRED_COLUMNS, OPTIONAL_COLUMNS } from "@/types/job-applications";
 
@@ -25,6 +24,52 @@ const JobApplications = () => {
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({});
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const { toast } = useToast();
+
+  // Generate dynamic options from actual applications data
+  const dynamicOptions = useMemo(() => {
+    if (!applications || applications.length === 0) {
+      return {
+        designationOptions: [],
+        subjectOptions: [],
+        districtOptions: []
+      };
+    }
+
+    // Extract unique designations
+    const designations = [...new Set(applications.map(app => app.designation).filter(Boolean))];
+    const designationOptions = designations.map(designation => ({
+      value: designation,
+      label: designation
+    }));
+
+    // Extract unique subjects (handle comma-separated subjects)
+    const allSubjects = applications.map(app => app.subject).filter(Boolean);
+    const subjectList: string[] = [];
+    allSubjects.forEach(subjectStr => {
+      if (subjectStr) {
+        const subjects = subjectStr.split(',').map(s => s.trim()).filter(Boolean);
+        subjectList.push(...subjects);
+      }
+    });
+    const uniqueSubjects = [...new Set(subjectList)];
+    const subjectOptions = uniqueSubjects.map(subject => ({
+      value: subject,
+      label: subject
+    }));
+
+    // Extract unique districts
+    const districts = [...new Set(applications.map(app => app.district).filter(Boolean))];
+    const districtOptions = districts.map(district => ({
+      value: district,
+      label: district
+    }));
+
+    return {
+      designationOptions,
+      subjectOptions,
+      districtOptions
+    };
+  }, [applications]);
 
 
 
@@ -322,7 +367,7 @@ const JobApplications = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All designations</SelectItem>
-                  {designationOptions.map(option => (
+                  {dynamicOptions.designationOptions.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -341,7 +386,7 @@ const JobApplications = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All subjects</SelectItem>
-                  {subjectOptions.map(option => (
+                  {dynamicOptions.subjectOptions.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -378,7 +423,7 @@ const JobApplications = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All districts</SelectItem>
-                  {districtOptions.map(option => (
+                  {dynamicOptions.districtOptions.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -419,7 +464,7 @@ const JobApplications = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {applications.map((application) => (
+                {filteredApplications.map((application) => (
                   <TableRow key={application.id}>
                     <TableCell>
                       <div>
@@ -470,8 +515,8 @@ const JobApplications = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => downloadCV(application.cv_file_path, application.full_name)}
-                        disabled={!application.cv_file_path}
+                        onClick={() => downloadCV(application.cv_file, application.full_name)}
+                        disabled={!application.cv_file}
                       >
                         <Download className="h-4 w-4 mr-1" />
                         Download CV

@@ -34,7 +34,7 @@ const Footer = () => {
   const fetchSocialLinks = async () => {
     try {
       const { data, error } = await supabase
-        .from('social_media_links')
+        .from('footer_social_media_links')
         .select('*')
         .eq('is_active', true)
         .order('display_order');

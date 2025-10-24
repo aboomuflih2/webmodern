@@ -16,8 +16,9 @@ const path = require('path');
     const page = await browser.newPage();
     
     // Navigate to careers page
-    console.log('📄 Navigating to careers page...');
-    await page.goto('http://localhost:8080/careers', { waitUntil: 'networkidle0' });
+    const targetUrl = process.env.TARGET_URL || 'http://localhost:8081/careers';
+    console.log('📄 Navigating to careers page at', targetUrl);
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
     
     // Wait for form to load
     await page.waitForSelector('form', { timeout: 10000 });
@@ -64,6 +65,7 @@ const path = require('path');
     // Upload CV file
     const fileInput = await page.$('input[type="file"]');
     await fileInput.uploadFile(testPdfPath);
+    console.log('📎 CV file selected');
     
     // Wait for file to be processed
     await page.waitForSelector('.text-green-600', { timeout: 5000 });
@@ -75,16 +77,18 @@ const path = require('path');
     
     // Wait for success message or navigation
     try {
-      await page.waitForSelector('.toast, [data-testid="toast"]', { timeout: 10000 });
+      await page.waitForSelector('.toast, [data-testid="toast"], .success-banner', { timeout: 10000 });
       console.log('✅ Application submitted successfully!');
     } catch (e) {
       // Check if we were redirected to home page
       await new Promise(resolve => setTimeout(resolve, 3000));
       const currentUrl = page.url();
-      if (currentUrl.includes('localhost:8080') && !currentUrl.includes('/careers')) {
-        console.log('✅ Application submitted and redirected to home page!');
-      } else {
-        console.log('⚠️  Could not confirm submission success');
+      if (currentUrl.includes('localhost:8080') || currentUrl.includes('localhost:8081')) {
+        if (!currentUrl.includes('/careers')) {
+          console.log('✅ Application submitted and redirected to home page!');
+        } else {
+          console.log('⚠️  Could not confirm submission success');
+        }
       }
     }
     

@@ -91,7 +91,7 @@ const BreakingNewsManager = () => {
         // Create new breaking news entry
         const { error } = await supabase
           .from('breaking_news')
-          .insert([{
+          .insert([{ 
             title: message.trim(),
             content: message.trim(),
             is_active: isActive
@@ -108,10 +108,11 @@ const BreakingNewsManager = () => {
       loadBreakingNews();
     } catch (error) {
       console.error('Error saving breaking news:', error);
+      const message = (error as any)?.message || 'Failed to save breaking news';
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to save breaking news',
+        description: message,
       });
     } finally {
       setSaving(false);

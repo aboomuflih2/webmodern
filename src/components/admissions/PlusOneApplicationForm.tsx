@@ -34,6 +34,21 @@ const formSchema = z.object({
   examRollNumber: z.string().min(1, "Exam roll number is required"),
   examYear: z.string().min(4, "Exam year is required"),
   stream: z.string().min(1, "Please select stream"),
+  // Academic Performance Fields
+  tenthTotalMarks: z.number().min(1, "Total marks is required").max(1000, "Total marks cannot exceed 1000"),
+  tenthObtainedMarks: z.number().min(0, "Obtained marks cannot be negative"),
+  tenthPercentage: z.number().min(0, "Percentage cannot be negative").max(100, "Percentage cannot exceed 100"),
+  tenthGrade: z.string().optional(),
+  tenthResult: z.enum(["pass", "fail", "compartment"], { required_error: "Please select result" }),
+  mathematicsMarks: z.number().min(0, "Mathematics marks cannot be negative").optional(),
+  scienceMarks: z.number().min(0, "Science marks cannot be negative").optional(),
+  englishMarks: z.number().min(0, "English marks cannot be negative").optional(),
+  socialScienceMarks: z.number().min(0, "Social Science marks cannot be negative").optional(),
+  languageMarks: z.number().min(0, "Language marks cannot be negative").optional(),
+  additionalSubject1: z.string().optional(),
+  additionalSubject1Marks: z.number().min(0, "Additional subject 1 marks cannot be negative").optional(),
+  additionalSubject2: z.string().optional(),
+  additionalSubject2Marks: z.number().min(0, "Additional subject 2 marks cannot be negative").optional(),
   hasSiblings: z.boolean().default(false),
   siblingsNames: z.string().optional(),
 });
@@ -95,6 +110,21 @@ export function PlusOneApplicationForm() {
             exam_roll_number: data.examRollNumber,
             exam_year: data.examYear,
             stream: data.stream,
+            // Academic Performance Data
+            tenth_total_marks: data.tenthTotalMarks,
+            tenth_obtained_marks: data.tenthObtainedMarks,
+            tenth_percentage: data.tenthPercentage,
+            tenth_grade: data.tenthGrade || null,
+            tenth_result: data.tenthResult,
+            mathematics_marks: data.mathematicsMarks || null,
+            science_marks: data.scienceMarks || null,
+            english_marks: data.englishMarks || null,
+            social_science_marks: data.socialScienceMarks || null,
+            language_marks: data.languageMarks || null,
+            additional_subject_1: data.additionalSubject1 || null,
+            additional_subject_1_marks: data.additionalSubject1Marks || null,
+            additional_subject_2: data.additionalSubject2 || null,
+            additional_subject_2_marks: data.additionalSubject2Marks || null,
             has_siblings: data.hasSiblings,
             siblings_names: data.siblingsNames || null,
           }]);
@@ -427,6 +457,290 @@ export function PlusOneApplicationForm() {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* Academic Performance */}
+            <Card>
+              <CardHeader>
+                <CardTitle>10th Grade Academic Performance</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="tenthTotalMarks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Total Marks</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="e.g., 500" 
+                            {...field}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tenthObtainedMarks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Obtained Marks</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="e.g., 450" 
+                            {...field}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="tenthPercentage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Percentage</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            placeholder="e.g., 90.5" 
+                            {...field}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tenthGrade"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Grade (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., A+, A, B+" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="tenthResult"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Result</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select result" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="pass">Pass</SelectItem>
+                          <SelectItem value="fail">Fail</SelectItem>
+                          <SelectItem value="compartment">Compartment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Subject-wise Marks */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Subject-wise Marks (Optional)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="mathematicsMarks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mathematics</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="Enter marks" 
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="scienceMarks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Science</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="Enter marks" 
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="englishMarks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>English</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="Enter marks" 
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="socialScienceMarks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Social Science</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="Enter marks" 
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="languageMarks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Second Language</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="Enter marks" 
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="additionalSubject1"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Additional Subject 1</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Subject name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="additionalSubject1Marks"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Marks</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="Enter marks" 
+                              {...field}
+                              onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="additionalSubject2"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Additional Subject 2</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Subject name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="additionalSubject2Marks"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Marks</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="Enter marks" 
+                              {...field}
+                              onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

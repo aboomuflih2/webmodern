@@ -11,7 +11,7 @@ interface NewsPost {
   title: string;
   excerpt: string;
   featured_image: string | null;
-  publication_date: string;
+  created_at: string;
   slug?: string;
 }
 
@@ -28,9 +28,9 @@ const CampusNews = () => {
 
       const { data, error: fetchError } = await supabase
         .from('news_posts')
-        .select('id, title, excerpt, featured_image, publication_date')
+        .select('id, title, excerpt, featured_image, created_at')
         .eq('is_published', true)
-        .order('publication_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(3);
 
       if (fetchError) {
@@ -155,7 +155,7 @@ const CampusNews = () => {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        <span>{formatDate(news.publication_date)}</span>
+                        <span>{formatDate(news.created_at)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <User className="h-3 w-3" />

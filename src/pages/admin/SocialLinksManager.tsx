@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit, Plus, Facebook, Instagram, Youtube, Twitter, Linkedin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SocialLink {
   id: string;
@@ -39,6 +40,7 @@ const platformLabels = {
 };
 
 export default function SocialLinksManager() {
+  const { user, session } = useAuth();
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -58,7 +60,7 @@ export default function SocialLinksManager() {
   const fetchSocialLinks = async () => {
     try {
       const { data, error } = await supabase
-        .from('social_media_links')
+        .from('footer_social_media_links')
         .select('*')
         .order('display_order');
 
@@ -79,11 +81,20 @@ export default function SocialLinksManager() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!user || !session) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to perform this action",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (editingLink) {
         // Update existing link
         const { error } = await supabase
-          .from('social_media_links')
+          .from('footer_social_media_links')
           .update(formData)
           .eq('id', editingLink.id);
 
@@ -96,7 +107,7 @@ export default function SocialLinksManager() {
       } else {
         // Create new link
         const { error } = await supabase
-          .from('social_media_links')
+          .from('footer_social_media_links')
           .insert([{ ...formData, display_order: socialLinks.length + 1 }]);
 
         if (error) throw error;
@@ -135,9 +146,18 @@ export default function SocialLinksManager() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this social media link?')) return;
 
+    if (!user || !session) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to perform this action",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
-        .from('social_media_links')
+        .from('footer_social_media_links')
         .delete()
         .eq('id', id);
 

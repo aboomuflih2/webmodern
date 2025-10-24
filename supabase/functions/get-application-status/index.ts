@@ -18,16 +18,13 @@ type InterviewSubject = {
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '3600',
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables');
-}
-
-const supabase = createClient(supabaseUrl, serviceRoleKey);
+const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -35,12 +32,34 @@ serve(async (req) => {
   }
 
   try {
-    const { applicationNumber, mobileNumber } = await req.json();
+    // Lazily create client per request to avoid init-time throws
+    const supabaseKey = serviceRoleKey ?? anonKey;
+    if (!supabaseUrl || !supabaseKey) {
+      return new Response(
+        JSON.stringify({ error: 'Server misconfiguration: missing Supabase URL or Key' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    let applicationNumber: unknown = undefined;
+    let mobileNumber: unknown = undefined;
+    try {
+      const body = await req.json();
+      applicationNumber = body?.applicationNumber;
+      mobileNumber = body?.mobileNumber;
+    } catch (_) {
+      // If body is not JSON, treat as missing input and return a friendly 200 response
+      return new Response(
+        JSON.stringify({ error: 'Application number and mobile number are required' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (typeof applicationNumber !== 'string' || typeof mobileNumber !== 'string') {
+      // Return 200 with error payload so the frontend can surface clear messages
       return new Response(
-        JSON.stringify({ error: 'applicationNumber and mobileNumber are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Application number and mobile number are required' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -49,8 +68,8 @@ serve(async (req) => {
 
     if (!sanitizedApplication || !sanitizedMobile) {
       return new Response(
-        JSON.stringify({ error: 'applicationNumber and mobileNumber are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Application number and mobile number are required' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -72,9 +91,10 @@ serve(async (req) => {
 
       if (error && error.code !== 'PGRST116') {
         console.error(`Error querying ${table.name}:`, error);
+        // Return 200 with a clear error payload to avoid generic non-2xx client errors
         return new Response(
           JSON.stringify({ error: 'Failed to load application' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -86,9 +106,10 @@ serve(async (req) => {
     }
 
     if (!application || !applicationType) {
+      // Return 200 with error payload to avoid generic non-2xx error messages client-side
       return new Response(
         JSON.stringify({ error: 'Application not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -98,15 +119,54 @@ serve(async (req) => {
       .eq('form_type', applicationType)
       .maybeSingle();
 
-    const { data: interviewSubjects, error: interviewError } = await supabase
-      .from<InterviewSubject>('interview_subjects')
-      .select('subject_name, marks_obtained, max_marks, display_order')
+    // Fetch interview subjects marks and templates separately to align with schema
+    type SubjectMarkRow = { subject_name: string; marks: number | null };
+    type TemplateRow = { subject_name: string; max_marks: number; display_order: number | null };
+
+    const { data: subjectMarks, error: subjectsError } = await supabase
+      .from('interview_subjects')
+      .select('subject_name, marks')
       .eq('application_id', application.id)
-      .eq('application_type', applicationType)
+      .eq('application_type', applicationType);
+
+    if (subjectsError && subjectsError.code !== 'PGRST116') {
+      console.error('Error loading interview_subjects:', subjectsError);
+    }
+
+    const { data: templates, error: templatesError } = await supabase
+      .from('interview_subject_templates')
+      .select('subject_name, max_marks, display_order')
+      .eq('form_type', applicationType)
+      .eq('is_active', true)
       .order('display_order', { ascending: true });
 
-    if (interviewError && interviewError.code !== 'PGRST116') {
-      console.error('Error loading interview subjects:', interviewError);
+    if (templatesError && templatesError.code !== 'PGRST116') {
+      console.error('Error loading interview_subject_templates:', templatesError);
+    }
+
+    // Build combined interview marks with template info
+    let interviewMarks: Array<{ subject_name: string; marks_obtained: number | null; max_marks: number | null; display_order: number | null }> = [];
+
+    if (templates && templates.length > 0) {
+      const marksByName = (subjectMarks as SubjectMarkRow[] | null || []).reduce<Record<string, number | null>>((acc, s) => {
+        acc[s.subject_name] = s.marks ?? null;
+        return acc;
+      }, {});
+
+      interviewMarks = (templates as TemplateRow[]).map((t) => ({
+        subject_name: t.subject_name,
+        marks_obtained: marksByName[t.subject_name] ?? null,
+        max_marks: t.max_marks,
+        display_order: t.display_order ?? null,
+      }));
+    } else if (subjectMarks && subjectMarks.length > 0) {
+      // Fallback: we have marks but no templates; assume max 25 each and keep original order
+      interviewMarks = (subjectMarks as SubjectMarkRow[]).map((s, idx) => ({
+        subject_name: s.subject_name,
+        marks_obtained: s.marks ?? null,
+        max_marks: 25,
+        display_order: idx + 1,
+      }));
     }
 
     const safeApplication = Object.fromEntries(
@@ -118,15 +178,16 @@ serve(async (req) => {
         application: safeApplication,
         applicationType,
         academicYear: formMeta?.academic_year ?? null,
-        interviewMarks: interviewSubjects ?? [],
+        interviewMarks,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('get-application-status error:', error);
+    // Return 200 with error payload to provide clear feedback to the client
     return new Response(
-      JSON.stringify({ error: 'Unexpected error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Unexpected error while loading application status' }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

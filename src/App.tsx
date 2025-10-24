@@ -43,6 +43,7 @@ import { PlusOneApplicationForm } from "./components/admissions/PlusOneApplicati
 import { ApplicationSuccess } from "./pages/ApplicationSuccess";
 import ApplicationTracking from "./pages/ApplicationTracking";
 import InMemoryAdmin from "./components/admin/InMemoryAdmin";
+import GatePassManager from "./pages/admin/GatePassManager";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +98,7 @@ const App = () => (
                   <Route path="admission-applications" element={<AdmissionApplications />} />
                   <Route path="job-applications" element={<JobApplications />} />
                   <Route path="interview-settings" element={<InterviewSettings />} />
+                  <Route path="gate-pass" element={<GatePassManager />} />
                   <Route path="applications/:type/:id" element={<ApplicationDetail />} />
                   <Route index element={<AdminDashboard />} />
                 </Routes>

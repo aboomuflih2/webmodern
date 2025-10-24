@@ -61,6 +61,22 @@ interface PlusOneApplication {
   exam_roll_number: string;
   exam_year: string;
   stream: string;
+  // Academic Performance Fields
+  tenth_total_marks?: number;
+  tenth_obtained_marks?: number;
+  tenth_percentage?: number;
+  tenth_grade?: string;
+  tenth_result?: string;
+  // Subject-wise Marks
+  mathematics_marks?: number;
+  science_marks?: number;
+  english_marks?: number;
+  social_science_marks?: number;
+  language_marks?: number;
+  additional_subject_1?: string;
+  additional_subject_1_marks?: number;
+  additional_subject_2?: string;
+  additional_subject_2_marks?: number;
   has_siblings: boolean;
   siblings_names?: string;
   status: string;
@@ -215,7 +231,7 @@ export default function ApplicationDetail() {
           id: template.id,
           subject_name: template.subject_name,
           max_marks: template.max_marks,
-          marks: existingMark?.marks || 0
+          marks: existingMark?.marks_obtained || 0
         };
       }) || [];
 
@@ -245,17 +261,15 @@ export default function ApplicationDetail() {
       await supabase
         .from("interview_subjects")
         .delete()
-        .eq("application_id", id)
-        .eq("application_type", type);
+        .eq("application_id", id);
 
       // Insert new marks
       const marksToInsert = interviewSubjects
         .filter(subject => subject.marks > 0)
         .map(subject => ({
           application_id: id,
-          application_type: type,
           subject_name: subject.subject_name,
-          marks: subject.marks,
+          marks_obtained: subject.marks,
           max_marks: subject.max_marks,
         }));
 
@@ -470,11 +484,11 @@ export default function ApplicationDetail() {
               <>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Stage</Label>
-                  <p>{(application as KGStdApplication).stage}</p>
+                  <p>{(application as KGStdApplication).stage || "Not provided"}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Need Madrassa</Label>
-                  <p>{(application as KGStdApplication).need_madrassa ? "Yes" : "No"}</p>
+                  <p>{(application as KGStdApplication).need_madrassa === null ? "Not provided" : ((application as KGStdApplication).need_madrassa ? "Yes" : "No")}</p>
                 </div>
                 {(application as KGStdApplication).previous_madrassa && (
                   <div>
@@ -511,11 +525,113 @@ export default function ApplicationDetail() {
                   <Label className="text-sm font-medium text-muted-foreground">Exam Year</Label>
                   <p>{(application as PlusOneApplication).exam_year}</p>
                 </div>
+                
+                {/* Academic Performance Section */}
+                {((application as PlusOneApplication).tenth_total_marks || 
+                  (application as PlusOneApplication).tenth_obtained_marks || 
+                  (application as PlusOneApplication).tenth_percentage) && (
+                  <>
+                    <div className="border-t pt-3 mt-3">
+                      <h4 className="font-medium text-sm mb-3">10th Grade Performance</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {(application as PlusOneApplication).tenth_total_marks && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">Total Marks</Label>
+                            <p>{(application as PlusOneApplication).tenth_total_marks}</p>
+                          </div>
+                        )}
+                        {(application as PlusOneApplication).tenth_obtained_marks && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">Obtained Marks</Label>
+                            <p>{(application as PlusOneApplication).tenth_obtained_marks}</p>
+                          </div>
+                        )}
+                        {(application as PlusOneApplication).tenth_percentage && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">Percentage</Label>
+                            <p>{(application as PlusOneApplication).tenth_percentage}%</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                        {(application as PlusOneApplication).tenth_grade && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">Grade</Label>
+                            <p>{(application as PlusOneApplication).tenth_grade}</p>
+                          </div>
+                        )}
+                        {(application as PlusOneApplication).tenth_result && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">Result</Label>
+                            <p className="capitalize">{(application as PlusOneApplication).tenth_result}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Subject-wise Marks Section */}
+                {((application as PlusOneApplication).mathematics_marks || 
+                  (application as PlusOneApplication).science_marks || 
+                  (application as PlusOneApplication).english_marks || 
+                  (application as PlusOneApplication).social_science_marks || 
+                  (application as PlusOneApplication).language_marks) && (
+                  <>
+                    <div className="border-t pt-3 mt-3">
+                      <h4 className="font-medium text-sm mb-3">Subject-wise Marks</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {(application as PlusOneApplication).mathematics_marks && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">Mathematics</Label>
+                            <p>{(application as PlusOneApplication).mathematics_marks}</p>
+                          </div>
+                        )}
+                        {(application as PlusOneApplication).science_marks && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">Science</Label>
+                            <p>{(application as PlusOneApplication).science_marks}</p>
+                          </div>
+                        )}
+                        {(application as PlusOneApplication).english_marks && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">English</Label>
+                            <p>{(application as PlusOneApplication).english_marks}</p>
+                          </div>
+                        )}
+                        {(application as PlusOneApplication).social_science_marks && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">Social Science</Label>
+                            <p>{(application as PlusOneApplication).social_science_marks}</p>
+                          </div>
+                        )}
+                        {(application as PlusOneApplication).language_marks && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">Second Language</Label>
+                            <p>{(application as PlusOneApplication).language_marks}</p>
+                          </div>
+                        )}
+                        {(application as PlusOneApplication).additional_subject_1 && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">{(application as PlusOneApplication).additional_subject_1}</Label>
+                            <p>{(application as PlusOneApplication).additional_subject_1_marks || 'N/A'}</p>
+                          </div>
+                        )}
+                        {(application as PlusOneApplication).additional_subject_2 && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">{(application as PlusOneApplication).additional_subject_2}</Label>
+                            <p>{(application as PlusOneApplication).additional_subject_2_marks || 'N/A'}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             )}
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Has Siblings</Label>
-              <p>{application.has_siblings ? "Yes" : "No"}</p>
+              <p>{application.has_siblings === null ? "Not provided" : (application.has_siblings ? "Yes" : "No")}</p>
             </div>
             {application.siblings_names && (
               <div>

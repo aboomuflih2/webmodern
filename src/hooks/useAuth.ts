@@ -68,22 +68,17 @@ export function useAuth() {
   const checkAdminRole = async (userId?: string): Promise<boolean> => {
     const userIdToCheck = userId || authState.user?.id;
 
-    
     if (!userIdToCheck) {
-      console.log('❌ No user ID available for admin check');
       return false;
     }
     
     try {
       // Check if we have a valid session first
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('📋 Current session:', { session: session?.user?.email, sessionError });
       
       if (!session) {
-        console.log('❌ No active session for admin check');
         return false;
       }
-      
 
       const { data, error } = await supabase
         .from('user_roles')
@@ -92,12 +87,10 @@ export function useAuth() {
         .eq('role', 'admin')
         .limit(1);
       
-      console.log('📊 checkAdminRole result:', { data, error });
       const isAdmin = !error && data && data.length > 0;
-      console.log('✅ Final admin status:', isAdmin);
       return isAdmin;
     } catch (err) {
-      console.error('❌ checkAdminRole error:', err);
+      console.error('Error checking admin role:', err);
       return false;
     }
   };

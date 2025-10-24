@@ -19,10 +19,12 @@ interface NewsPost {
   content: string;
   excerpt: string;
   featured_image: string | null;
-  publication_date: string;
   author_id: string;
   is_published: boolean;
+  created_at: string;
+  updated_at: string;
   like_count: number;
+  slug?: string;
 }
 
 interface Comment {
@@ -62,7 +64,7 @@ const NewsManager = () => {
     const { data, error } = await supabase
       .from("news_posts")
       .select("*")
-      .order("publication_date", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching news:", error);
@@ -128,7 +130,7 @@ const NewsManager = () => {
       category: null, // Optional field
       tags: [], // Optional field
       is_published: formData.is_published,
-      publication_date: formData.is_published ? new Date().toISOString() : null,
+      // publication_date is handled automatically by created_at
       slug: formData.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
     };
 
@@ -323,7 +325,7 @@ const NewsManager = () => {
                     <PhotoUpload
                       currentPhotoUrl={formData.featured_image}
                       onPhotoChange={(photoUrl) => setFormData(prev => ({ ...prev, featured_image: photoUrl || "" }))}
-                      bucket="news-photos"
+                      bucket="news-images"
                       folder="articles"
                       maxSizeInMB={5}
                     />
@@ -378,7 +380,7 @@ const NewsManager = () => {
                         </Badge>
                       </CardTitle>
                       <div className="text-sm text-muted-foreground">
-                        By {article.author_id} • {format(new Date(article.publication_date), "MMM dd, yyyy")}
+                        By {article.author_id} • {format(new Date(article.created_at), "MMM dd, yyyy")}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

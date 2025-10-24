@@ -29,7 +29,8 @@ import {
   UserPlus,
   Briefcase,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -38,7 +39,6 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
-  console.log('🏗️ AdminLayout rendering with children:', children);
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [pageManagementOpen, setPageManagementOpen] = useState(true);
@@ -91,6 +91,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const submissionItems = [
     { href: '/admin/contacts', label: 'Contact Messages', icon: Mail },
     { href: '/admin/job-applications', label: 'Job Applications', icon: ClipboardList },
+    { href: '/admin/gate-pass', label: 'Gate Pass Requests', icon: Shield },
   ];
 
   return (

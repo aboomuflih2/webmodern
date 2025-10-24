@@ -101,15 +101,6 @@ const Careers: React.FC = () => {
   };
 
   const onSubmit = async (data: JobApplicationForm) => {
-    if (!cvFile) {
-      toast({
-        title: "CV Required",
-        description: "Please upload your CV/Resume",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       const formData: JobApplicationFormData = {
         ...data,
@@ -158,7 +149,7 @@ const Careers: React.FC = () => {
           <CardHeader>
             <CardTitle className="text-2xl text-center">Job Application Form</CardTitle>
             <CardDescription className="text-center">
-              Please fill out all required fields to submit your application
+              Please fill out all required fields to submit your application. CV/Resume upload is optional but recommended.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -279,14 +270,13 @@ const Careers: React.FC = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Principal">Principal</SelectItem>
-                              <SelectItem value="Vice Principal">Vice Principal</SelectItem>
                               <SelectItem value="Teacher">Teacher</SelectItem>
                               <SelectItem value="Assistant Teacher">Assistant Teacher</SelectItem>
                               <SelectItem value="Lab Assistant">Lab Assistant</SelectItem>
                               <SelectItem value="Librarian">Librarian</SelectItem>
                               <SelectItem value="Office Staff">Office Staff</SelectItem>
                               <SelectItem value="Support Staff">Support Staff</SelectItem>
+                              <SelectItem value="Vehicle Staff">Vehicle Staff</SelectItem>
                               <SelectItem value="Other">Other</SelectItem>
                             </SelectContent>
                           </Select>
@@ -402,7 +392,7 @@ const Careers: React.FC = () => {
                 {/* CV Upload */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
-                    CV/Resume Upload
+                    CV/Resume Upload (Optional but Recommended)
                   </h3>
                   
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">

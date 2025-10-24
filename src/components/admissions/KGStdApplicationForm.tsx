@@ -70,6 +70,9 @@ export function KGStdApplicationForm() {
   // Ensure no native form submission refreshes the page
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    console.log('🔍 Form submission attempted');
+    console.log('📋 Form errors:', form.formState.errors);
+    console.log('📝 Form values:', form.getValues());
     form.handleSubmit(onSubmit)(e);
   };
 
@@ -89,42 +92,77 @@ export function KGStdApplicationForm() {
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
+    
+    // Debug: Log form data before submission
+    console.log('🔍 Form submission data:', {
+      stage: data.stage,
+      needMadrassa: data.needMadrassa,
+      hasSiblings: data.hasSiblings,
+      email: data.email,
+      fullName: data.fullName,
+      allData: data
+    });
+    
     try {
       let tries = 0;
       let lastError: Error | null = null;
       while (tries < 3) {
         const applicationNumber = generateApplicationNumber();
+        
+        const insertData = { 
+          application_number: applicationNumber,
+          full_name: data.fullName,
+          gender: data.gender,
+          date_of_birth: data.dateOfBirth,
+          stage: data.stage,
+          need_madrassa: data.needMadrassa,
+          previous_madrassa: data.previousMadrassa || null,
+          father_name: data.fatherName,
+          mother_name: data.motherName,
+          house_name: data.houseName,
+          post_office: data.postOffice,
+          village: data.village,
+          pincode: data.pincode,
+          district: data.district,
+          email: data.email || null,
+          mobile_number: data.mobileNumber,
+          previous_school: data.previousSchool || null,
+          has_siblings: data.hasSiblings,
+          siblings_names: data.siblingsNames || null,
+        };
+        
+        // Debug: Log database insert data
+        console.log('💾 Database insert data:', {
+          stage: insertData.stage,
+          need_madrassa: insertData.need_madrassa,
+          has_siblings: insertData.has_siblings,
+          email: insertData.email,
+          application_number: insertData.application_number
+        });
+        
         const { error } = await supabase
           .from('kg_std_applications')
-          .insert([{
-            application_number: applicationNumber,
-            child_name: data.fullName,
-            gender: data.gender,
-            date_of_birth: data.dateOfBirth,
-            father_name: data.fatherName,
-            mother_name: data.motherName,
-            house_name: data.houseName,
-            post_office: data.postOffice,
-            village: data.village,
-            pincode: data.pincode,
-            district: data.district,
-            mobile_number: data.mobileNumber,
-          }]);
+          .insert([insertData]);
         if (!error) {
+          console.log('✅ Application submitted successfully:', applicationNumber);
           navigate(`/admissions/success?type=kg-std&app=${encodeURIComponent(applicationNumber)}&mobile=${encodeURIComponent(data.mobileNumber)}`);
           return;
         }
+        console.error('❌ Database insert error:', error);
         lastError = error;
         const msg = error?.message || '';
         // Legacy schema fallback: retry insert with older columns if stage/madrassa fields missing
         if (msg.toLowerCase().includes('column') && msg.toLowerCase().includes('does not exist')) {
           const { error: legacyError } = await supabase
             .from('kg_std_applications')
-            .insert([{
+            .insert([{ 
               application_number: applicationNumber,
-              child_name: data.fullName,
+              full_name: data.fullName,
               gender: data.gender,
               date_of_birth: data.dateOfBirth,
+              stage: data.stage,
+              need_madrassa: data.needMadrassa,
+              previous_madrassa: data.previousMadrassa || null,
               father_name: data.fatherName,
               mother_name: data.motherName,
               guardian_name: null,
@@ -136,6 +174,8 @@ export function KGStdApplicationForm() {
               email: data.email || null,
               mobile_number: data.mobileNumber,
               previous_school: data.previousSchool || null,
+              has_siblings: data.hasSiblings,
+              siblings_names: data.siblingsNames || null,
             }]);
           if (!legacyError) {
             navigate(`/admissions/success?type=kg-std&app=${encodeURIComponent(applicationNumber)}&mobile=${encodeURIComponent(data.mobileNumber)}`);
@@ -253,7 +293,7 @@ export function KGStdApplicationForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Stage</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select stage" />

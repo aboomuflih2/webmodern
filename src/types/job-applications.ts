@@ -10,7 +10,7 @@ export interface JobApplication {
   qualifications: string;
   district: string;
   address: string;
-  cv_file_path?: string;
+  cv_file?: string;
   cover_letter?: string;
   created_at: string;
   updated_at?: string;

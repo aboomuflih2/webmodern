@@ -11,8 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Share2, MessageCircle, Calendar, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, Share2, MessageCircle, Calendar, Clock, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { format, isAfter } from "date-fns";
+
 
 interface NewsPost {
   id: string;
@@ -20,7 +21,7 @@ interface NewsPost {
   content: string;
   excerpt: string;
   featured_image: string | null;
-  publication_date: string;
+  created_at: string;
   author: string;
   like_count: number;
 }
@@ -106,7 +107,7 @@ const NewsEvents = () => {
       .from("news_posts")
       .select("*")
       .eq("is_published", true)
-      .order("publication_date", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching news:", error);
@@ -324,7 +325,7 @@ const NewsEvents = () => {
                   <CardTitle className="line-clamp-2">{article.title}</CardTitle>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="w-4 h-4" />
-                    {format(new Date(article.publication_date), "MMM dd, yyyy")}
+                    {format(new Date(article.created_at), "MMM dd, yyyy")}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -349,10 +350,20 @@ const NewsEvents = () => {
 
         {/* Events Section */}
         <section className="py-16 px-4 max-w-7xl mx-auto bg-muted/30">
+          <div className="flex items-center justify-between mb-12">
+            <h2 className="text-3xl font-bold">Events</h2>
+            <Button 
+              onClick={() => window.open('https://gatepassmodern.netlify.app/', '_blank')}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+            >
+              <Users className="h-4 w-4" />
+              Request Gate Pass
+            </Button>
+          </div>
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Upcoming Events */}
             <div>
-              <h2 className="text-3xl font-bold mb-8">Upcoming Events</h2>
+              <h3 className="text-2xl font-bold mb-8">Upcoming Events</h3>
               <div className="space-y-4">
                 {upcomingEvents.length > 0 ? upcomingEvents.map((event) => (
                   <Card key={event.id}>
@@ -388,7 +399,7 @@ const NewsEvents = () => {
 
             {/* Previous Events */}
             <div>
-              <h2 className="text-3xl font-bold mb-8">Previous Events</h2>
+              <h3 className="text-2xl font-bold mb-8">Previous Events</h3>
               <div className="space-y-4">
                 {pastEvents.slice(0, 5).map((event) => (
                   <Card key={event.id} className="opacity-75">
@@ -496,7 +507,7 @@ const NewsEvents = () => {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
                     <span>By {selectedArticle.author}</span>
                     <span>•</span>
-                    <span>{format(new Date(selectedArticle.publication_date), "MMMM dd, yyyy")}</span>
+                    <span>{format(new Date(selectedArticle.created_at), "MMMM dd, yyyy")}</span>
                   </div>
                 </div>
 

@@ -225,7 +225,7 @@ const EventsManager = () => {
                 <PhotoUpload
                   currentPhotoUrl={formData.image_url}
                   onPhotoChange={(photoUrl) => setFormData(prev => ({ ...prev, image_url: photoUrl || "" }))}
-                  bucket="event-photos"
+                  bucket="gallery-images"
                   folder="events"
                   maxSizeInMB={5}
                 />

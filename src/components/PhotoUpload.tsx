@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 interface PhotoUploadProps {
   currentPhotoUrl?: string;
   onPhotoChange: (photoUrl: string | null) => void;
-  bucket: 'staff-photos' | 'testimonial-photos' | 'news-photos' | 'event-photos';
+  bucket: 'staff-photos' | 'testimonial-photos' | 'news-photos' | 'news-images' | 'event-photos' | 'gallery-images';
   folder?: string;
   maxSizeInMB?: number;
   className?: string;
