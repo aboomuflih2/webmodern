@@ -179,18 +179,18 @@ const JobApplications = () => {
   };
 
   const getDesignationLabel = (designation: string) => {
-    const option = designationOptions.find(opt => opt.value === designation);
+    const option = dynamicOptions.designationOptions.find(opt => opt.value === designation);
     return option?.label || designation;
   };
 
   const getSubjectLabel = (subject?: string) => {
     if (!subject) return '-';
-    const option = subjectOptions.find(opt => opt.value === subject);
+    const option = dynamicOptions.subjectOptions.find(opt => opt.value === subject);
     return option?.label || subject;
   };
 
   const getDistrictLabel = (district: string) => {
-    const option = districtOptions.find(opt => opt.value === district);
+    const option = dynamicOptions.districtOptions.find(opt => opt.value === district);
     return option?.label || district;
   };
 
