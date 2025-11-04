@@ -1,0 +1,45 @@
+-- Fix gallery-images storage bucket policies for event uploads
+-- This migration adds RLS policies to allow proper access to the gallery-images bucket
+
+-- Enable RLS on storage.objects if not already enabled
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies for gallery-images bucket if they exist
+DROP POLICY IF EXISTS "Public read access for gallery-images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload to gallery-images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can update gallery-images" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can delete from gallery-images" ON storage.objects;
+
+-- Create policies for gallery-images bucket
+-- Allow public read access to gallery-images
+CREATE POLICY "Public read access for gallery-images"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'gallery-images');
+
+-- Allow authenticated users to upload to gallery-images
+CREATE POLICY "Authenticated users can upload to gallery-images"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'gallery-images' 
+  AND auth.role() = 'authenticated'
+);
+
+-- Allow authenticated users to update gallery-images
+CREATE POLICY "Authenticated users can update gallery-images"
+ON storage.objects FOR UPDATE
+USING (
+  bucket_id = 'gallery-images' 
+  AND auth.role() = 'authenticated'
+)
+WITH CHECK (
+  bucket_id = 'gallery-images' 
+  AND auth.role() = 'authenticated'
+);
+
+-- Allow authenticated users to delete from gallery-images
+CREATE POLICY "Authenticated users can delete from gallery-images"
+ON storage.objects FOR DELETE
+USING (
+  bucket_id = 'gallery-images' 
+  AND auth.role() = 'authenticated'
+);

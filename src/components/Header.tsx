@@ -54,10 +54,15 @@ const Header = ({ onAdmissionsClick }: HeaderProps) => {
                 e.currentTarget.style.display = 'none';
               }}
             />
-            <div>
-              <h1 className="text-xl font-heading font-bold text-primary">Modern HSS</h1>
-              <p className="text-sm text-muted-foreground">Pottur</p>
-            </div>
+            <img 
+              src="/lovable-uploads/M3.png" 
+              alt="MODERN" 
+              className="h-12 object-contain"
+              onError={(e) => {
+                console.error('Logo text failed to load:', e.currentTarget.src);
+                e.currentTarget.style.display = 'none';
+              }}
+            />
           </Link>
 
           {/* Desktop Navigation */}
