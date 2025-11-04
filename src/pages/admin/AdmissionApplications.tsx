@@ -7,22 +7,64 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, Filter, Search, Users, Calendar, Check } from "lucide-react";
+import { Eye, Filter, Search, Users, Calendar, Check, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { exportApplicationsToExcelWithMetadata } from "@/utils/excelExport";
 
 interface Application {
   id: string;
   application_number: string;
-  full_name?: string; // For both kg_std and plus_one applications
+  full_name: string;
+  date_of_birth: string;
+  gender: string;
+  father_name: string;
+  mother_name: string;
+  house_name: string;
+  village: string;
+  post_office: string;
+  district: string;
+  pincode: string;
   mobile_number: string;
+  email?: string | null;
   status: string;
   created_at: string;
+  updated_at: string;
+  interview_date?: string | null;
+  interview_time?: string | null;
+  has_siblings?: boolean | null;
+  siblings_names?: string | null;
   type: "kg_std" | "plus_one";
+  
+  // KG/STD specific fields
   stage?: string;
+  previous_school?: string | null;
+  need_madrassa?: boolean | null;
+  previous_madrassa?: string | null;
+  
+  // Plus One specific fields
   stream?: string;
+  board?: string;
+  exam_roll_number?: string;
+  exam_year?: string;
+  tenth_school?: string;
+  landmark?: string | null;
+  tenth_total_marks?: number | null;
+  tenth_obtained_marks?: number | null;
+  tenth_percentage?: number | null;
+  tenth_grade?: string | null;
+  tenth_result?: string | null;
+  mathematics_marks?: number | null;
+  science_marks?: number | null;
+  english_marks?: number | null;
+  social_science_marks?: number | null;
+  language_marks?: number | null;
+  additional_subject_1?: string | null;
+  additional_subject_1_marks?: number | null;
+  additional_subject_2?: string | null;
+  additional_subject_2_marks?: number | null;
 }
 
 const statusOptions = [
@@ -64,6 +106,7 @@ export default function AdmissionApplications() {
   const [bulkInterviewModalOpen, setBulkInterviewModalOpen] = useState(false);
   const [bulkInterviewDate, setBulkInterviewDate] = useState("");
   const [bulkInterviewTime, setBulkInterviewTime] = useState("");
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     fetchApplications();
@@ -76,18 +119,31 @@ export default function AdmissionApplications() {
   const fetchApplications = async () => {
     setLoading(true);
     try {
-      // Fetch KG STD applications
+      // Fetch KG STD applications with all fields
       const { data: kgStdData, error: kgStdError } = await supabase
         .from('kg_std_applications')
-        .select('id, application_number, full_name, mobile_number, status, created_at, stage')
+        .select(`
+          id, application_number, full_name, date_of_birth, gender, father_name, mother_name,
+          house_name, village, post_office, district, pincode, mobile_number, email,
+          previous_school, stage, need_madrassa, previous_madrassa, has_siblings, siblings_names,
+          interview_date, interview_time, status, created_at, updated_at
+        `)
         .order('created_at', { ascending: false });
 
       if (kgStdError) throw kgStdError;
 
-      // Fetch Plus One applications  
+      // Fetch Plus One applications with all fields including marks
       const { data: plusOneData, error: plusOneError } = await supabase
         .from('plus_one_applications')
-        .select('id, application_number, full_name, mobile_number, status, created_at, stream')
+        .select(`
+          id, application_number, full_name, date_of_birth, gender, father_name, mother_name,
+          house_name, village, post_office, district, pincode, mobile_number, email,
+          stream, board, exam_roll_number, exam_year, tenth_school, landmark,
+          has_siblings, siblings_names, interview_date, interview_time, status, created_at, updated_at,
+          tenth_total_marks, tenth_obtained_marks, tenth_percentage, tenth_grade, tenth_result,
+          mathematics_marks, science_marks, english_marks, social_science_marks, language_marks,
+          additional_subject_1, additional_subject_1_marks, additional_subject_2, additional_subject_2_marks
+        `)
         .order('created_at', { ascending: false });
 
       if (plusOneError) throw plusOneError;
@@ -232,6 +288,95 @@ export default function AdmissionApplications() {
     }
   };
 
+  const handleExportToExcel = async () => {
+    setExportLoading(true);
+    try {
+      // Prepare the applications data for export
+      const applicationsToExport = filteredApplications.map(app => ({
+        id: app.id,
+        application_number: app.application_number,
+        full_name: app.full_name || '',
+        gender: app.gender || '',
+        date_of_birth: app.date_of_birth || '',
+        father_name: app.father_name || '',
+        mother_name: app.mother_name || '',
+        house_name: app.house_name || '',
+        post_office: app.post_office || '',
+        village: app.village || '',
+        pincode: app.pincode || '',
+        district: app.district || '',
+        email: app.email || '',
+        mobile_number: app.mobile_number,
+        status: app.status,
+        created_at: app.created_at,
+        interview_date: app.interview_date,
+        interview_time: app.interview_time,
+        // Type-specific fields
+        ...(app.type === 'kg_std' ? {
+          stage: app.stage,
+          need_madrassa: app.need_madrassa,
+          previous_madrassa: app.previous_madrassa,
+          previous_school: app.previous_school,
+          has_siblings: app.has_siblings,
+          siblings_names: app.siblings_names,
+        } : {}),
+        ...(app.type === 'plus_one' ? {
+          landmark: app.landmark,
+          tenth_school: app.tenth_school,
+          board: app.board,
+          exam_roll_number: app.exam_roll_number,
+          exam_year: app.exam_year,
+          stream: app.stream,
+          tenth_total_marks: app.tenth_total_marks,
+          tenth_obtained_marks: app.tenth_obtained_marks,
+          tenth_percentage: app.tenth_percentage,
+          tenth_grade: app.tenth_grade,
+          tenth_result: app.tenth_result,
+          mathematics_marks: app.mathematics_marks,
+          science_marks: app.science_marks,
+          english_marks: app.english_marks,
+          social_science_marks: app.social_science_marks,
+          language_marks: app.language_marks,
+          additional_subject_1: app.additional_subject_1,
+          additional_subject_1_marks: app.additional_subject_1_marks,
+          additional_subject_2: app.additional_subject_2,
+          additional_subject_2_marks: app.additional_subject_2_marks,
+          has_siblings: app.has_siblings,
+          siblings_names: app.siblings_names,
+        } : {}),
+      }));
+
+      // Prepare metadata
+      const metadata = {
+        totalApplications: applications.length,
+        filteredApplications: filteredApplications.length,
+        exportDate: new Date().toISOString(),
+        filters: {
+          search: searchTerm || undefined,
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+          type: typeFilter !== 'all' ? typeFilter : undefined,
+        },
+      };
+
+      // Export to Excel
+      exportApplicationsToExcelWithMetadata(applicationsToExport, metadata);
+
+      toast({
+        title: "Success",
+        description: `Exported ${filteredApplications.length} applications to Excel`,
+      });
+    } catch (error: unknown) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export applications to Excel",
+        variant: "destructive"
+      });
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -347,7 +492,7 @@ export default function AdmissionApplications() {
               </Select>
             </div>
 
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <Button
                 onClick={() => {
                   setSearchTerm("");
@@ -355,9 +500,18 @@ export default function AdmissionApplications() {
                   setTypeFilter("all");
                 }}
                 variant="outline"
-                className="w-full"
+                className="flex-1"
               >
                 Clear Filters
+              </Button>
+              <Button
+                onClick={handleExportToExcel}
+                disabled={exportLoading || filteredApplications.length === 0}
+                variant="default"
+                className="flex-1"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {exportLoading ? "Exporting..." : "Export to Excel"}
               </Button>
             </div>
           </div>
@@ -373,13 +527,22 @@ export default function AdmissionApplications() {
                 <Check className="w-5 h-5" />
                 {selectedApplications.size} Applications Selected
               </span>
-              <Dialog open={bulkInterviewModalOpen} onOpenChange={setBulkInterviewModalOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Schedule Interview for Selected
-                  </Button>
-                </DialogTrigger>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleExportToExcel}
+                  disabled={exportLoading}
+                  variant="outline"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {exportLoading ? "Exporting..." : "Export to Excel"}
+                </Button>
+                <Dialog open={bulkInterviewModalOpen} onOpenChange={setBulkInterviewModalOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Schedule Interview for Selected
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Schedule Interview for {selectedApplications.size} Applications</DialogTitle>
@@ -412,6 +575,7 @@ export default function AdmissionApplications() {
                   </div>
                 </DialogContent>
               </Dialog>
+              </div>
             </CardTitle>
           </CardHeader>
         </Card>

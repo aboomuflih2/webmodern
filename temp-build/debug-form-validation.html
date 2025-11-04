@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Form Validation Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #333; }
+        h2 { color: #666; }
+        code { background: #f4f4f4; padding: 2px 4px; border-radius: 3px; }
+        ol, ul { line-height: 1.6; }
+        .highlight { background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Gate Pass Form Validation Debug</h1>
+    <p>Open the browser console and test the form at: <a href="http://localhost:8080" target="_blank">http://localhost:8080</a></p>
+    
+    <div class="highlight">
+        <strong>Current Issue:</strong> Form shows "ID proof is required" error even when a file is uploaded.
+    </div>
+    
+    <h2>Debug Steps:</h2>
+    <ol>
+        <li>Open the Gate Pass Request form at <a href="http://localhost:8080" target="_blank">http://localhost:8080</a></li>
+        <li>Fill in all required fields</li>
+        <li>Upload an ID proof document (should show green checkmark)</li>
+        <li>Open browser console (F12)</li>
+        <li>Try to submit the form</li>
+        <li>Check console for any errors or validation messages</li>
+    </ol>
+    
+    <h2>Expected Behavior:</h2>
+    <ul>
+        <li>File should be selected and show green checkmark</li>
+        <li>Form should submit successfully</li>
+        <li>No "ID proof is required" error should appear</li>
+    </ul>
+    
+    <h2>Debugging Information:</h2>
+    <p>The form uses react-hook-form with zod validation.</p>
+    <p>The file input is registered with: <code>register('id_proof_document')</code></p>
+    <p>File changes are handled with: <code>setValue('id_proof_document', files, { shouldValidate: true })</code></p>
+    <p>The validation schema accepts both File and FileList objects.</p>
+    
+    <h2>Potential Issues to Check:</h2>
+    <ul>
+        <li><strong>File input registration:</strong> Check if the file input is properly connected to react-hook-form</li>
+        <li><strong>Form state update:</strong> Verify that setValue is actually updating the form state</li>
+        <li><strong>Validation timing:</strong> Check if validation runs before file upload completes</li>
+        <li><strong>Schema mismatch:</strong> Ensure the validation schema matches the actual data structure</li>
+    </ul>
+    
+    <h2>Console Commands to Try:</h2>
+    <p>In the browser console, you can inspect the form state:</p>
+    <code>
+        // Check if react-hook-form is available<br>
+        // Look for form state in React DevTools<br>
+        // Check for any validation errors in console
+    </code>
+</body>
+</html>
