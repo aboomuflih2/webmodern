@@ -94,7 +94,102 @@ export function ApplicationTracking() {
 
         if (!payload.application) {
           console.error('No application found in payload');
-          throw new Error("Application not found");
+          const normalize = (v: string) => v.replace(/\D+/g, '').slice(-10);
+          const inputNorm = normalize(mobileNumber);
+
+          const plusRes = await supabase
+            .from('plus_one_applications')
+            .select('*')
+            .eq('application_number', applicationNumber)
+            .maybeSingle();
+
+          if (plusRes.data) {
+            const dbNorm = normalize(String(plusRes.data.mobile_number ?? ''));
+            if (dbNorm === inputNorm) {
+              const app = plusRes.data as ApplicationData;
+              setApplication(app);
+              setApplicationType('plus_one');
+              const { data: formMeta } = await supabase
+                .from('admission_forms')
+                .select('academic_year')
+                .eq('form_type', 'plus_one')
+                .maybeSingle();
+              setAcademicYear(String(formMeta?.academic_year ?? ''));
+              const { data: templates } = await supabase
+                .from('interview_subject_templates')
+                .select('subject_name, max_marks, display_order')
+                .eq('form_type', 'plus_one')
+                .eq('is_active', true)
+                .order('display_order', { ascending: true });
+              const { data: subjectMarks } = await supabase
+                .from('interview_subjects')
+                .select('subject_name, marks')
+                .eq('application_id', app.id)
+                .eq('application_type', 'plus_one');
+              const marksByName = (subjectMarks ?? []).reduce<Record<string, number | null>>((acc, s: any) => {
+                acc[s.subject_name] = s.marks ?? null;
+                return acc;
+              }, {});
+              const marksArr: InterviewMark[] = (templates ?? []).map((t: any) => ({
+                subject_name: t.subject_name,
+                marks_obtained: marksByName[t.subject_name] ?? null,
+                max_marks: t.max_marks ?? null,
+                display_order: t.display_order ?? null,
+              }));
+              setInterviewMarks(marksArr);
+              return;
+            }
+          }
+
+          const kgRes = await supabase
+            .from('kg_std_applications')
+            .select('*')
+            .eq('application_number', applicationNumber)
+            .maybeSingle();
+
+          if (kgRes.data) {
+            const dbNorm = normalize(String(kgRes.data.mobile_number ?? ''));
+            if (dbNorm === inputNorm) {
+              const appRaw = kgRes.data as Record<string, any>;
+              const app: ApplicationData = {
+                ...(appRaw as any),
+                full_name: String(appRaw.full_name ?? appRaw.child_name ?? ''),
+              } as ApplicationData;
+              setApplication(app);
+              setApplicationType('kg_std');
+              const { data: formMeta } = await supabase
+                .from('admission_forms')
+                .select('academic_year')
+                .eq('form_type', 'kg_std')
+                .maybeSingle();
+              setAcademicYear(String(formMeta?.academic_year ?? ''));
+              const { data: templates } = await supabase
+                .from('interview_subject_templates')
+                .select('subject_name, max_marks, display_order')
+                .eq('form_type', 'kg_std')
+                .eq('is_active', true)
+                .order('display_order', { ascending: true });
+              const { data: subjectMarks } = await supabase
+                .from('interview_subjects')
+                .select('subject_name, marks')
+                .eq('application_id', app.id)
+                .eq('application_type', 'kg_std');
+              const marksByName = (subjectMarks ?? []).reduce<Record<string, number | null>>((acc, s: any) => {
+                acc[s.subject_name] = s.marks ?? null;
+                return acc;
+              }, {});
+              const marksArr: InterviewMark[] = (templates ?? []).map((t: any) => ({
+                subject_name: t.subject_name,
+                marks_obtained: marksByName[t.subject_name] ?? null,
+                max_marks: t.max_marks ?? null,
+                display_order: t.display_order ?? null,
+              }));
+              setInterviewMarks(marksArr);
+              return;
+            }
+          }
+
+          throw new Error('Application not found');
         }
 
         console.log('Application status:', payload.application.status);
@@ -120,11 +215,15 @@ export function ApplicationTracking() {
         setInterviewMarks(marks);
       } catch (error) {
         console.error("Error fetching application:", error);
-        const message =
-          error instanceof Error ? error.message : "Failed to fetch application details";
+        const raw = error instanceof Error ? error.message : "Failed to fetch application details";
+        const friendly = raw === "Application not found"
+          ? "No application found for the given details"
+          : raw === "Mobile number does not match this application"
+          ? "The mobile number does not match the application"
+          : raw;
         toast({
           title: "Error",
-          description: message,
+          description: friendly,
           variant: "destructive",
         });
         navigate("/");

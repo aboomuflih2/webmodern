@@ -86,12 +86,10 @@ serve(async (req) => {
         .from<ApplicationRecord>(table.name)
         .select('*')
         .eq('application_number', sanitizedApplication)
-        .eq('mobile_number', sanitizedMobile)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error(`Error querying ${table.name}:`, error);
-        // Return 200 with a clear error payload to avoid generic non-2xx client errors
         return new Response(
           JSON.stringify({ error: 'Failed to load application' }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -106,9 +104,18 @@ serve(async (req) => {
     }
 
     if (!application || !applicationType) {
-      // Return 200 with error payload to avoid generic non-2xx error messages client-side
       return new Response(
         JSON.stringify({ error: 'Application not found' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const normalize = (v: string) => v.replace(/\D+/g, '').slice(-10);
+    const inputMobileNorm = normalize(sanitizedMobile);
+    const dbMobileNorm = normalize(String(application.mobile_number ?? ''));
+    if (!inputMobileNorm || !dbMobileNorm || inputMobileNorm !== dbMobileNorm) {
+      return new Response(
+        JSON.stringify({ error: 'Mobile number does not match this application' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -172,10 +179,14 @@ serve(async (req) => {
     const safeApplication = Object.fromEntries(
       Object.entries(application).filter(([_, value]) => value !== null && value !== undefined)
     );
+    const nameField = typeof (safeApplication as Record<string, unknown>)["full_name"] === 'string'
+      ? (safeApplication as Record<string, unknown>)["full_name"] as string
+      : String((safeApplication as Record<string, unknown>)["child_name"] ?? '');
+    const normalizedApplication = { ...safeApplication, full_name: nameField };
 
     return new Response(
       JSON.stringify({
-        application: safeApplication,
+        application: normalizedApplication,
         applicationType,
         academicYear: formMeta?.academic_year ?? null,
         interviewMarks,

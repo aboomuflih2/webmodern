@@ -1,3 +1,0 @@
-This is a test file to simulate image upload functionality.
-We'll use this to test the photo upload feature in the admin forms.
-File created for testing purposes only

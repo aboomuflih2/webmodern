@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { createClient } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 import { JobApplication, JobApplicationFormData, JobApplicationFilters, BulkImportResult } from '@/types/job-applications';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,6 +9,7 @@ export const useJobApplications = (options?: { autoFetch?: boolean }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { uploadFile, deleteFile } = useFileUpload();
 
   const fetchApplications = async () => {
     try {
@@ -22,7 +22,31 @@ export const useJobApplications = (options?: { autoFetch?: boolean }) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      const normalized = (data || []).map((row: any) => ({
+      type JobApplicationsRow = {
+        id: string;
+        full_name?: string | null;
+        name?: string | null;
+        email?: string | null;
+        phone?: string | null;
+        mobile?: string | null;
+        designation?: string | null;
+        subject?: string | null;
+        subject_specification?: string | null;
+        other_designation?: string | null;
+        specify_other?: string | null;
+        experience_years?: number | null;
+        qualifications?: string | null;
+        district?: string | null;
+        address?: string | null;
+        place?: string | null;
+        post_office?: string | null;
+        pincode?: string | null;
+        cv_file?: string | null;
+        cover_letter?: string | null;
+        created_at: string;
+        updated_at?: string | null;
+      };
+      const normalized = (data || []).map((row: JobApplicationsRow) => ({
         id: row.id,
         full_name: row.full_name ?? row.name ?? '',
         email: row.email ?? '',
@@ -52,115 +76,103 @@ export const useJobApplications = (options?: { autoFetch?: boolean }) => {
 
   const submitApplication = async (formData: JobApplicationFormData, onProgress?: (progress: number) => void): Promise<boolean> => {
     try {
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      if (!anonKey) {
-        console.error('[JobApplications] Missing VITE_SUPABASE_ANON_KEY');
-      } else {
-        console.debug('[JobApplications] Using anon key', {
-          len: anonKey.length,
-          prefix: anonKey.slice(0, 12)
-        });
-      }
-
-      // Create a fresh public client that strips Authorization and only sends apikey
-      const strippedFetch: typeof fetch = (input, init) => {
-        const headers = new Headers(init?.headers || {});
-        if (headers.has('Authorization')) {
-          headers.delete('Authorization');
-        }
-        if (anonKey && !headers.has('apikey')) {
-          headers.set('apikey', anonKey);
-        }
-        const nextInit: RequestInit = { ...(init || {}), headers };
-        return fetch(input as RequestInfo, nextInit);
-      };
-
-      const publicClient = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        anonKey,
-        {
-          auth: {
-            persistSession: false,
-            autoRefreshToken: false,
-          },
-          global: {
-            headers: {
-              apikey: anonKey || '',
-            },
-            fetch: strippedFetch,
-          },
-        }
-      );
+      
 
       let cvFilePath: string | undefined;
 
       // Upload CV file if provided
       if (formData.cv_file) {
-        const fileExt = formData.cv_file.name.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExt}`;
-        const { data, error } = await supabase.storage
-          .from('document-uploads')
-          .upload(fileName, formData.cv_file, {
-            cacheControl: '3600',
-            upsert: false,
-          });
-
-        if (error) {
-          throw new Error(`Failed to upload CV: ${error.message}`);
+        const uploaded = await uploadFile(formData.cv_file, 'cv-uploads');
+        if (uploaded) {
+          cvFilePath = uploaded;
+          onProgress?.(100);
+        } else {
+          console.warn('[JobApplications] CV upload failed via helper, continuing without CV');
         }
+      }
 
-        // On success, use the returned path
-        cvFilePath = data?.path || fileName;
-        if (onProgress) {
-          try { onProgress(100); } catch {}
+      const parseAddress = (address: string | null | undefined) => {
+        let place = '';
+        let post_office = '';
+        let pincode = '';
+        const src = (address || '').trim();
+        if (src) {
+          const pinMatch = src.match(/(\b\d{6}\b)/);
+          if (pinMatch) pincode = pinMatch[1];
+          const parts = src.split(/[,|]/).map(s => s.trim()).filter(Boolean);
+          if (parts.length > 0) place = parts[0];
+          const poPart = parts.find(p => /\b(po|post)\b/i.test(p));
+          if (poPart) {
+            post_office = poPart.replace(/\b(po|post)\b/ig, '').trim() || poPart;
+          }
         }
-      } 
+        return { place, post_office, pincode };
+      };
 
-      // Prepare application data (using new database columns)
-      const applicationData = {
+      const { place, post_office, pincode } = parseAddress(formData.address);
+
+      let payload: Record<string, any> = {
+        // union of modern + legacy fields; unknown ones will be pruned on error
         application_number: `APP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         full_name: formData.full_name,
+        name: formData.full_name,
         email: formData.email,
         phone: formData.phone,
-        position: formData.designation || 'Not specified', // Keep position for backward compatibility
-        designation: formData.designation || null, // New column
+        mobile: formData.phone,
+        position: formData.designation || 'Not specified',
+        designation: formData.designation || 'Not specified',
         experience_years: formData.experience_years || 0,
-        qualification: formData.qualifications || 'Not specified', // Keep qualification for backward compatibility
-        qualifications: formData.qualifications || null, // New column
+        qualification: formData.qualifications || 'Not specified',
+        qualifications: formData.qualifications || null,
         date_of_birth: formData.date_of_birth || null,
         address: formData.address || null,
-        district: formData.district || null,
+        district: formData.district || '',
         subject: formData.subject || null,
+        subject_specification: formData.subject || null,
         other_designation: formData.other_designation || null,
+        specify_other: formData.other_designation || null,
         previous_experience: formData.previous_experience || null,
         why_join: formData.why_join || null,
         cv_file: cvFilePath || null,
-        cover_letter: formData.why_join || null, // Use why_join as cover letter for backward compatibility
+        cv_file_path: cvFilePath || null,
+        cv_file_name: formData.cv_file?.name || null,
         status: 'pending',
+        place,
+        post_office,
+        pincode,
       };
 
-      const { error: insertError } = await publicClient
-        .from('job_applications')
-        .insert([applicationData]);
+      let insertError: any = null;
+      for (let i = 0; i < 10; i++) {
+        const { error } = await (supabase as unknown as { from: (t: string) => { insert: (v: any) => Promise<{ data: any; error: any }> } })
+          .from('job_applications')
+          .insert([payload]);
+        if (!error) {
+          insertError = null;
+          break;
+        }
+        insertError = error;
+        const msg = (error as any)?.message || '';
+        const m = msg.match(/Could not find '([^']+)' column/);
+        if (m && m[1] && payload.hasOwnProperty(m[1])) {
+          delete payload[m[1]];
+          continue;
+        }
+        break;
+      }
 
       if (insertError) {
+        const ie = insertError as unknown as { code?: string; details?: string; hint?: string; message: string };
         console.error('[JobApplications] Insert error', {
-          code: (insertError as any).code,
-          message: insertError.message,
-          details: (insertError as any).details,
-          hint: (insertError as any).hint,
+          code: ie.code,
+          message: ie.message,
+          details: ie.details,
+          hint: ie.hint,
         });
-        // If the main insert failed, log the error and re-throw it
-        // The applicationData should now have the correct field mapping
-        console.error('[JobApplications] Main insert failed, no legacy fallback needed');
-        
         if (cvFilePath) {
-          try {
-            await supabase.storage
-              .from('document-uploads')
-              .remove([cvFilePath]);
-          } catch (remErr) {
-            console.warn('[JobApplications] Cleanup remove CV failed', remErr);
+          const removed = await deleteFile(cvFilePath, 'cv-uploads');
+          if (!removed) {
+            await deleteFile(cvFilePath, 'document-uploads');
           }
         }
         throw insertError;
@@ -188,9 +200,15 @@ export const useJobApplications = (options?: { autoFetch?: boolean }) => {
     try {
       // Delete CV file if exists
       if (cvFilePath) {
-        await supabase.storage
-          .from('document-uploads')
-          .remove([cvFilePath]);
+        try {
+          await supabase.storage.from('cv-uploads').remove([cvFilePath]);
+        } catch (e1) {
+          try {
+            await supabase.storage.from('document-uploads').remove([cvFilePath]);
+          } catch (e2) {
+            console.warn('Error deleting CV from both buckets', e1, e2);
+          }
+        }
       }
 
       const { error } = await supabase
@@ -222,13 +240,19 @@ export const useJobApplications = (options?: { autoFetch?: boolean }) => {
 
   const downloadCV = async (filePath: string, applicantName: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.storage
-        .from('document-uploads')
-        .download(filePath);
-
-      if (error) throw error;
-
-      const url = URL.createObjectURL(data);
+      let url: string | null = null;
+      try {
+        const { data } = await supabase.storage
+          .from('cv-uploads')
+          .download(filePath);
+        url = URL.createObjectURL(data);
+      } catch (e1) {
+        const { data, error: err2 } = await supabase.storage
+          .from('document-uploads')
+          .download(filePath);
+        if (err2) throw err2;
+        url = URL.createObjectURL(data);
+      }
       const a = document.createElement('a');
       a.href = url;
       a.download = `${applicantName}_CV.pdf`;
@@ -255,11 +279,11 @@ export const useJobApplications = (options?: { autoFetch?: boolean }) => {
     }
   };
 
-  const bulkImport = async (importData: any[]): Promise<BulkImportResult> => {
+  const bulkImport = async (importData: unknown[]): Promise<BulkImportResult> => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: any; error: any }> })
         .rpc('bulk_import_job_applications', {
-          applications_data: importData
+          applications_data: importData as unknown,
         });
 
       if (error) throw error;
@@ -325,7 +349,7 @@ export const useJobApplicationFilters = (applications: JobApplication[]) => {
 
   const [filteredApplications, setFilteredApplications] = useState<JobApplication[]>(applications);
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = applications;
 
     if (filters.name) {
@@ -359,7 +383,7 @@ export const useJobApplicationFilters = (applications: JobApplication[]) => {
     }
 
     setFilteredApplications(filtered);
-  };
+  }, [applications, filters]);
 
   const clearFilters = () => {
     setFilters({
@@ -374,7 +398,7 @@ export const useJobApplicationFilters = (applications: JobApplication[]) => {
 
   useEffect(() => {
     applyFilters();
-  }, [applications, filters]);
+  }, [applyFilters]);
 
   return {
     filters,
@@ -411,11 +435,7 @@ export const useFileUpload = () => {
       
       const { error } = await supabase.storage
         .from(bucket)
-        .upload(fileName, file, {
-          onUploadProgress: (progress) => {
-            setUploadProgress((progress.loaded / progress.total) * 100);
-          }
-        });
+        .upload(fileName, file);
 
       if (error) throw error;
       

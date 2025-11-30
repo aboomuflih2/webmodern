@@ -10,6 +10,9 @@ import Contact from "./pages/Contact";
 import Careers from "./pages/Careers";
 import Academics from "./pages/Academics";
 import NewsEvents from "./pages/NewsEvents";
+import GalleryIndex from "./pages/GalleryIndex";
+import GalleryAlbum from "./pages/GalleryAlbum.tsx";
+
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 
@@ -32,6 +35,7 @@ import AcademicProgramEdit from "./pages/admin/AcademicProgramEdit";
 import NewsManager from "./pages/admin/NewsManager";
 import EventsManager from "./pages/admin/EventsManager";
 import GalleryManager from "./pages/admin/GalleryManager";
+import GalleryAlbumsManager from "./pages/admin/GalleryAlbumsManager";
 import SocialLinksManager from "./pages/admin/SocialLinksManager";
 import AdmissionForms from "./pages/admin/AdmissionForms";
 import AdmissionApplications from "./pages/admin/AdmissionApplications";
@@ -62,6 +66,8 @@ const App = () => (
             <Route path="/academics" element={<Academics />} />
             <Route path="/news-events" element={<NewsEvents />} />
             <Route path="/news" element={<NewsEvents />} />
+            <Route path="/gallery" element={<GalleryIndex />} />
+            <Route path="/gallery/:albumSlug" element={<GalleryAlbum />} />
             <Route path="/auth" element={<Auth />} />
             
             {/* Admission Routes */}
@@ -93,6 +99,7 @@ const App = () => (
                   <Route path="news" element={<NewsManager />} />
                   <Route path="events" element={<EventsManager />} />
                   <Route path="gallery" element={<GalleryManager />} />
+                  <Route path="gallery-albums" element={<GalleryAlbumsManager />} />
                   <Route path="social-links" element={<SocialLinksManager />} />
                   <Route path="admission-forms" element={<AdmissionForms />} />
                   <Route path="admission-applications" element={<AdmissionApplications />} />

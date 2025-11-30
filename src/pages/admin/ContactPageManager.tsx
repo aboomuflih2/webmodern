@@ -137,7 +137,7 @@ const ContactPageManager = () => {
       const typeContents = contents.filter(c => c.content_type === newContent.content_type);
       const maxOrder = Math.max(...typeContents.map(c => c.display_order), 0);
       
-      const additionalData: any = {};
+      const additionalData: Record<string, unknown> = {};
       if (newContent.phone) additionalData.phone = newContent.phone;
       if (newContent.email) additionalData.email = newContent.email;
       if (newContent.lat && newContent.lng) {
@@ -208,7 +208,7 @@ const ContactPageManager = () => {
       });
       toast({
         title: 'Error',
-        description: `Failed to add contact content: ${error?.message || 'Unknown error'}. Please try again.`,
+        description: `Failed to add contact content: ${(error as { message?: string } | undefined)?.message || 'Unknown error'}. Please try again.`,
         variant: 'destructive',
       });
     } finally {
@@ -301,7 +301,7 @@ const ContactPageManager = () => {
     }
   };
 
-  const updateContentField = (id: string, field: keyof ContactPageContent, value: any) => {
+  const updateContentField = (id: string, field: 'title' | 'content', value: string) => {
     setContents(prev => prev.map(content => 
       content.id === id ? { ...content, [field]: value } : content
     ));
@@ -386,7 +386,7 @@ const ContactPageManager = () => {
       {/* Filter */}
       <div className="flex gap-4 items-center">
         <Label>Filter by type:</Label>
-        <Select value={selectedType} onValueChange={(value: any) => setSelectedType(value)}>
+        <Select value={selectedType} onValueChange={(value: string) => setSelectedType(value as ContactPageContent['content_type'] | 'all')}>
           <SelectTrigger className="w-48">
             <SelectValue />
           </SelectTrigger>
@@ -414,7 +414,7 @@ const ContactPageManager = () => {
                 <Label htmlFor="content_type">Content Type</Label>
                 <Select 
                   value={newContent.content_type} 
-                  onValueChange={(value: any) => setNewContent(prev => ({ ...prev, content_type: value }))}
+                  onValueChange={(value: string) => setNewContent(prev => ({ ...prev, content_type: value as ContactPageContent['content_type'] }))}
                 >
                   <SelectTrigger>
                     <SelectValue />

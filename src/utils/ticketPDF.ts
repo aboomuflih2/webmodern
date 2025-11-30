@@ -44,7 +44,7 @@ const imageUrlToBase64 = async (url: string): Promise<string> => {
   });
 };
 
-export const generateTicketPDF = async (ticket: any, qrCodeDataUrl: string): Promise<void> => {
+export const generateTicketPDF = async (ticket: GatePassTicket, qrCodeDataUrl: string): Promise<void> => {
   console.log('📄 generateTicketPDF: Starting PDF generation with ticket:', ticket);
   console.log('📄 generateTicketPDF: QR code data URL length:', qrCodeDataUrl?.length || 0);
   

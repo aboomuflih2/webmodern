@@ -14,7 +14,7 @@ interface ContactPageContent {
   content_type: string;
   title: string;
   content: string;
-  additional_data?: any;
+  additional_data?: unknown;
   display_order: number;
   is_active: boolean;
 }
@@ -132,29 +132,29 @@ const Contact = () => {
       icon: Phone,
       title: phoneContent?.title || "Call Us",
       details: phoneContent ? parseContactDetails(phoneContent.content) : ["9645499929, 9745499928"],
-      primary: phoneContent?.additional_data?.primary || "9645499929, 9745499928"
+      primary: ((phoneContent?.additional_data as { primary?: string } | undefined)?.primary) || "9645499929, 9745499928"
     },
     {
       icon: Mail,
       title: emailContent?.title || "Email Us",
       details: emailContent ? parseContactDetails(emailContent.content) : ["modernpotur@gmail.com"],
-      primary: emailContent?.additional_data?.primary || "modernpotur@gmail.com"
+      primary: ((emailContent?.additional_data as { primary?: string } | undefined)?.primary) || "modernpotur@gmail.com"
     },
     {
       icon: MapPin,
       title: addressContent?.title || "Visit Us",
       details: addressContent ? parseContactDetails(addressContent.content) : ["Mudur P.O., Vattamkulam Via", "Edappal, Malappuram", "Kerala - 679578"],
-      primary: addressContent?.additional_data?.primary || "Mudur P.O., Vattamkulam Via"
+      primary: ((addressContent?.additional_data as { primary?: string } | undefined)?.primary) || "Mudur P.O., Vattamkulam Via"
     },
     {
       icon: Clock,
       title: hoursContent?.title || "Office Hours",
       details: hoursContent ? parseContactDetails(hoursContent.content) : ["Monday - Friday: 9:00 AM - 4:00 PM", "Saturday: 9:00 AM - 1:00 PM", "Sunday: Closed"],
-      primary: hoursContent?.additional_data?.primary || "Mon-Fri: 9:00 AM - 4:00 PM"
+      primary: ((hoursContent?.additional_data as { primary?: string } | undefined)?.primary) || "Mon-Fri: 9:00 AM - 4:00 PM"
     }
   ];
 
-  const departments = departmentContent?.additional_data?.departments || [
+  const departments = (((departmentContent?.additional_data as { departments?: Array<{ icon: typeof GraduationCap; title: string; description?: string; contact?: string; email?: string }> } | undefined)?.departments)) || [
     {
       icon: GraduationCap,
       title: "Admissions Office",

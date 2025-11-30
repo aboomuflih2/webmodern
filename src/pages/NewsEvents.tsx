@@ -5,13 +5,13 @@ import { AdmissionsModal } from "@/components/admissions/AdmissionsModal";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Share2, MessageCircle, Calendar, Clock, ChevronLeft, ChevronRight, Users, X } from "lucide-react";
+import { Heart, Share2, MessageCircle, Calendar, Clock, Users } from "lucide-react";
 import { format, isAfter } from "date-fns";
 
 
@@ -53,20 +53,15 @@ const NewsEvents = () => {
   const [isAdmissionsModalOpen, setIsAdmissionsModalOpen] = useState(false);
   const [newsArticles, setNewsArticles] = useState<NewsPost[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
-  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
   const [selectedArticle, setSelectedArticle] = useState<NewsPost | null>(null);
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState({ name: "", email: "", text: "" });
   const [isLiked, setIsLiked] = useState(false);
-  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchNewsArticles();
     fetchEvents();
-    fetchGalleryPhotos();
   }, []);
 
   // Generate a stable anonymous client ID for likes
@@ -120,34 +115,45 @@ const NewsEvents = () => {
   };
 
   const fetchEvents = async () => {
-    const { data, error } = await supabase
+    const res = await (supabase as unknown as {
+      from: (table: string) => {
+        select: (cols: string) => any;
+      };
+    })
       .from("events")
       .select("*")
       .eq("is_published", true)
       .order("event_date", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching events:", error);
+    const dataUnknown = (res as unknown as { data: unknown[] | null }).data;
+    const errorUnknown = (res as unknown as { error: unknown | null }).error;
+
+    if (errorUnknown) {
+      console.error("Error fetching events:", errorUnknown);
       return;
     }
 
-    setEvents(data || []);
+    type EventsRow = {
+      id: string;
+      title: string;
+      description: string;
+      event_date?: string | null;
+      date_time?: string | null;
+      location?: string | null;
+      event_type?: string | null;
+    };
+    const rows = (dataUnknown ?? []) as EventsRow[];
+    const normalized = rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      event_date: (row.event_date ?? row.date_time) as string,
+      location: (row.location ?? row.event_type ?? "") as string,
+    })) as Event[];
+
+    setEvents(normalized);
   };
 
-  const fetchGalleryPhotos = async () => {
-    const { data, error } = await supabase
-      .from("gallery_photos")
-      .select("*")
-
-      .order("display_order", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching gallery:", error);
-      return;
-    }
-
-    setGalleryPhotos(data || []);
-  };
 
   const fetchComments = async (articleId: string) => {
     const { data, error } = await supabase
@@ -165,7 +171,7 @@ const NewsEvents = () => {
     const normalized = (data ?? []).map((row) => ({
       id: row.id,
       author_name: row.author_name,
-      comment_text: row.comment_text ?? row.comment_content,
+      comment_text: row.comment_text,
       created_at: row.created_at,
     })) as Comment[];
 
@@ -222,7 +228,7 @@ const NewsEvents = () => {
       return;
     }
 
-    let { error } = await supabase
+    const { error } = await supabase
       .from("article_comments")
       .insert({
         article_id: selectedArticle.id,
@@ -231,21 +237,6 @@ const NewsEvents = () => {
         comment_text: newComment.text,
         is_approved: false, // Comments require admin approval
       });
-
-    // Fallback for older schema where column was 'comment_content'
-    const errorMessage = error instanceof Error ? error.message : "";
-    if (error && errorMessage.includes("comment_text")) {
-      const retry = await supabase
-        .from("article_comments")
-        .insert({
-          article_id: selectedArticle.id,
-          author_name: newComment.name,
-          author_email: newComment.email,
-          comment_content: newComment.text,
-          is_approved: false, // Comments require admin approval
-        });
-      error = retry.error;
-    }
 
     if (!error) {
       setNewComment({ name: "", email: "", text: "" });
@@ -283,24 +274,6 @@ const NewsEvents = () => {
   const upcomingEvents = events.filter(event => isAfter(new Date(event.event_date), new Date()));
   const pastEvents = events.filter(event => !isAfter(new Date(event.event_date), new Date()));
 
-  const nextPhoto = () => {
-    setCurrentPhotoIndex((prev) => (prev + 1) % galleryPhotos.length);
-  };
-
-  const prevPhoto = () => {
-    setCurrentPhotoIndex((prev) => (prev - 1 + galleryPhotos.length) % galleryPhotos.length);
-  };
-
-  const openPhotoModal = (photo: GalleryPhoto, index: number) => {
-    setSelectedPhoto(photo);
-    setCurrentPhotoIndex(index);
-    setIsPhotoModalOpen(true);
-  };
-
-  const closePhotoModal = () => {
-    setIsPhotoModalOpen(false);
-    setSelectedPhoto(null);
-  };
 
   return (
     <>
@@ -445,101 +418,13 @@ const NewsEvents = () => {
           </div>
         </section>
 
-        {/* Gallery Section */}
-        {galleryPhotos.length > 0 && (
-          <section className="py-16 px-4 max-w-7xl mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-12">Photo Gallery</h2>
-            
-            {/* Banner Carousel */}
-            <div className="relative mb-16">
-              <div className="relative h-[500px] rounded-lg overflow-hidden">
-                <img 
-                  src={galleryPhotos[currentPhotoIndex]?.image_url} 
-                  alt={galleryPhotos[currentPhotoIndex]?.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                  <h3 className="text-white text-xl font-bold mb-2">
-                    {galleryPhotos[currentPhotoIndex]?.title}
-                  </h3>
-                  {galleryPhotos[currentPhotoIndex]?.description && (
-                    <p className="text-white/90">
-                      {galleryPhotos[currentPhotoIndex]?.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-              
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white"
-                onClick={prevPhoto}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white"
-                onClick={nextPhoto}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-
-              <div className="flex justify-center mt-4 gap-2">
-                {galleryPhotos.map((_, index) => (
-                  <button
-                    key={index}
-                    className={`w-3 h-3 rounded-full transition-colors ${
-                      index === currentPhotoIndex ? "bg-primary" : "bg-muted"
-                    }`}
-                    onClick={() => setCurrentPhotoIndex(index)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Card Grid View */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {galleryPhotos.map((photo, index) => (
-                <Card 
-                  key={photo.id} 
-                  className="cursor-pointer hover:shadow-lg transition-shadow duration-300 group"
-                  onClick={() => openPhotoModal(photo, index)}
-                >
-                  <div className="relative h-48 overflow-hidden rounded-t-lg">
-                    <img 
-                      src={photo.image_url} 
-                      alt={photo.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    {index === currentPhotoIndex && (
-                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium">
-                        Current
-                      </div>
-                    )}
-                  </div>
-                  <CardContent className="p-4">
-                    <CardTitle className="text-lg font-semibold mb-2 line-clamp-2">
-                      {photo.title}
-                    </CardTitle>
-                    {photo.description && (
-                      <p className="text-muted-foreground text-sm line-clamp-3">
-                        {photo.description}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* Article Modal */}
         <Dialog open={!!selectedArticle} onOpenChange={() => setSelectedArticle(null)}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="sr-only">Article</DialogTitle>
+            </DialogHeader>
             {selectedArticle && (
               <div className="space-y-6">
                 {selectedArticle.featured_image && (
@@ -642,42 +527,6 @@ const NewsEvents = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Photo Modal */}
-        <Dialog open={isPhotoModalOpen} onOpenChange={setIsPhotoModalOpen}>
-          <DialogContent className="max-w-4xl w-full p-0 overflow-hidden">
-            {selectedPhoto && (
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white"
-                  onClick={closePhotoModal}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-                
-                <div className="relative">
-                  <img 
-                    src={selectedPhoto.image_url} 
-                    alt={selectedPhoto.title}
-                    className="w-full h-auto max-h-[70vh] object-contain"
-                  />
-                </div>
-                
-                <div className="p-6 bg-white">
-                  <h3 className="text-2xl font-bold mb-3 text-gray-900">
-                    {selectedPhoto.title}
-                  </h3>
-                  {selectedPhoto.description && (
-                    <p className="text-gray-700 leading-relaxed text-base">
-                      {selectedPhoto.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
 
         <Footer />
         <AdmissionsModal 

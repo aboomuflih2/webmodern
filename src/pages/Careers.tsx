@@ -101,33 +101,28 @@ const Careers: React.FC = () => {
   };
 
   const onSubmit = async (data: JobApplicationForm) => {
-    try {
-      const formData: JobApplicationFormData = {
-        ...data,
-        cv_file: cvFile,
-      };
+    const formData: JobApplicationFormData = {
+      ...data,
+      cv_file: cvFile,
+    };
 
-      await submitApplication(formData, (progress) => {
-        setUploadProgress(progress);
-      });
+    const ok = await submitApplication(formData, (progress) => {
+      setUploadProgress(progress);
+    });
 
-      toast({
-        title: "Application Submitted",
-        description: "Your job application has been submitted successfully. We will contact you soon.",
-      });
+    if (!ok) return;
 
-      // Reset form
-      form.reset();
-      setCvFile(null);
-      setUploadProgress(0);
-      
-      // Navigate to home page
-      setTimeout(() => {
-        navigate('/');
-      }, 2000);
-    } catch (error) {
-      console.error('Error submitting application:', error);
-    }
+    toast({
+      title: "Application Submitted",
+      description: "Your job application has been submitted successfully. We will contact you soon.",
+    });
+
+    form.reset();
+    setCvFile(null);
+    setUploadProgress(0);
+    setTimeout(() => {
+      navigate('/');
+    }, 2000);
   };
 
   return (

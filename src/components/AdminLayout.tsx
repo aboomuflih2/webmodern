@@ -76,6 +76,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { href: '/admin/news', label: 'News & Blog', icon: Newspaper },
     { href: '/admin/events', label: 'Events', icon: Calendar },
     { href: '/admin/gallery', label: 'Gallery', icon: Images },
+    { href: '/admin/gallery-albums', label: 'Gallery Albums', icon: Images },
   ];
 
   const admissionsItems = [

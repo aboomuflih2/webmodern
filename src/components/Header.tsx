@@ -15,6 +15,7 @@ const Header = ({ onAdmissionsClick }: HeaderProps) => {
     { name: "About Us", href: "/about" },
     { name: "Academics", href: "/academics" },
     { name: "News & Events", href: "/news" },
+    { name: "Gallery", href: "/gallery" },
     { name: "Contact", href: "/contact" },
   ];
 

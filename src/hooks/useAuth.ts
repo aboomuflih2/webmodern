@@ -88,6 +88,12 @@ export function useAuth() {
         .limit(1);
       
       const isAdmin = !error && data && data.length > 0;
+      if (isAdmin) {
+        const currentRole = (session.user.user_metadata as Record<string, unknown>)?.role as string | undefined;
+        if (currentRole !== 'admin') {
+          await supabase.auth.updateUser({ data: { role: 'admin' } });
+        }
+      }
       return isAdmin;
     } catch (err) {
       console.error('Error checking admin role:', err);
