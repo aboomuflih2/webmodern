@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import { uploadFileAsAdmin, deleteFileAsAdmin } from '../lib/supabaseAdmin';
+import { supabase } from '@/integrations/supabase/client';
 import { GatePassFormSchema } from '../schemas/gatePassSchema';
 import { GatePassRequest, GatePassSubmission, AdminGatePassUpdate } from '../types/gatePass';
 import { toast } from 'sonner';
@@ -17,7 +16,9 @@ export const useGatePassSubmission = () => {
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      const { error: uploadError } = await uploadFileAsAdmin('gate-pass-documents', filePath, file);
+      const { error: uploadError } = await supabase.storage
+        .from('gate-pass-documents')
+        .upload(filePath, file);
 
       if (uploadError) {
         console.error('Error uploading file:', uploadError);
@@ -39,7 +40,7 @@ export const useGatePassSubmission = () => {
       if (error) {
         console.error('Error submitting gate pass:', error);
         // Clean up uploaded file if database insertion fails
-        await deleteFileAsAdmin('gate-pass-documents', [filePath]);
+        await supabase.storage.from('gate-pass-documents').remove([filePath]);
         toast.error('Failed to submit gate pass request. Please try again.');
         return false;
       }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import type { BoardMember, BoardType, CreateBoardMemberRequest, UpdateBoardMemberRequest } from '../../shared/types/board-members';
 
 export const useBoardMembers = (boardType?: BoardType) => {

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { SchoolConfiguration, UseSchoolConfigReturn } from '../types/ticket';
 
 export const useSchoolConfig = (): UseSchoolConfigReturn => {

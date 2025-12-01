@@ -1,34 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+const isServer = typeof window === 'undefined';
+const supabaseUrl = isServer ? process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL : undefined;
+const supabaseServiceKey = isServer ? process.env.SUPABASE_SERVICE_ROLE_KEY : undefined;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase environment variables');
-}
+export const supabaseAdmin = (isServer && supabaseUrl && supabaseServiceKey)
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    })
+  : undefined as unknown as ReturnType<typeof createClient>;
 
-// Admin client with service role key for privileged operations
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
-
-// Helper function to upload files with admin privileges
 export const uploadFileAsAdmin = async (bucket: string, path: string, file: File) => {
-  const { data, error } = await supabaseAdmin.storage
-    .from(bucket)
-    .upload(path, file);
-  
-  return { data, error };
+  throw new Error('Admin upload is not available in the browser');
 };
 
-// Helper function to delete files with admin privileges
 export const deleteFileAsAdmin = async (bucket: string, paths: string[]) => {
-  const { data, error } = await supabaseAdmin.storage
-    .from(bucket)
-    .remove(paths);
-  
-  return { data, error };
+  throw new Error('Admin delete is not available in the browser');
 };
